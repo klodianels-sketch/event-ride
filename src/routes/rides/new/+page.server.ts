@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, redirect, isRedirect } from '@sveltejs/kit';
 import { connectDB } from '$lib/db';
 import type { Actions } from './$types';
 
@@ -50,7 +50,9 @@ export const actions: Actions = {
 			});
 
 			redirect(303, `/?created=${result.insertedId.toString()}`);
-		} catch {
+		} catch (err) {
+			if (isRedirect(err)) throw err;
+			console.error('[rides/new] DB insert failed:', err);
 			return fail(500, { error: 'Datenbankfehler. Bitte versuche es erneut.', fields });
 		}
 	}
