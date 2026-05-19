@@ -37,6 +37,8 @@
 	},
 	"dependencies": {
 		"@sveltejs/adapter-netlify": "^6.0.4",
+		"@types/bcrypt": "^6.0.0",
+		"bcrypt": "^6.0.0",
 		"mongodb": "^7.2.0"
 	}
 }

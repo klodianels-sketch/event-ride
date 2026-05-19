@@ -1,13 +1,17 @@
 import { MongoClient } from 'mongodb';
 import { MONGODB_URI } from '$env/static/private';
 
-const client = new MongoClient(MONGODB_URI);
-let connected = false;
+let client: MongoClient | null = null;
 
-export async function connectDB() {
-	if (!connected) {
-		await client.connect();
-		connected = true;
-	}
-	return client.db('event-ride');
+async function getClient(): Promise<MongoClient> {
+  if (!client) {
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+  }
+  return client;
+}
+
+export async function getDb() {
+  const c = await getClient();
+  return c.db('event-ride');
 }

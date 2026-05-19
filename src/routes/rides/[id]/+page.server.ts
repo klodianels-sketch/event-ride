@@ -1,39 +1,53 @@
-import { error, redirect } from '@sveltejs/kit';
-import { connectDB } from '$lib/db';
+import type { PageServerLoad } from './$types';
+import { error } from '@sveltejs/kit';
+import { getDb } from '$lib/db';
 import { ObjectId } from 'mongodb';
-import type { Ride } from '$lib/types';
-import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
-	const db = await connectDB();
-	try {
-		const raw = await db.collection('rides').findOne({ _id: new ObjectId(params.id) });
-		if (!raw) error(404, 'Fahrt nicht gefunden');
-		const ride: Ride = { ...(raw as unknown as Ride), _id: raw._id.toString() };
-		return { ride };
-	} catch {
-		error(404, 'Fahrt nicht gefunden');
-	}
-};
+  const db = await getDb();
 
-export const actions: Actions = {
-	book: async ({ params }) => {
-		const db = await connectDB();
-		try {
-			const ride = await db.collection('rides').findOne({ _id: new ObjectId(params.id) });
-			if (!ride) error(404, 'Fahrt nicht gefunden');
-			if (ride.seatsAvailable <= 0) {
-				error(400, 'Keine freien Plätze mehr verfügbar');
-			}
+  let rideId: ObjectId;
+  try {
+    rideId = new ObjectId(params.id);
+  } catch {
+    error(404, 'Fahrt nicht gefunden');
+  }
 
-			await db
-				.collection('rides')
-				.updateOne({ _id: new ObjectId(params.id) }, { $inc: { seatsAvailable: -1 } });
+  const ride = await db.collection('rides').findOne({ _id: rideId });
+  if (!ride) error(404, 'Fahrt nicht gefunden');
 
-			redirect(303, `/rides/${params.id}/success`);
-		} catch (e) {
-			// Redirect-Fehler durchlassen
-			throw e;
-		}
-	}
+  const allRides = await db
+    .collection('rides')
+    .find({ eventName: ride.eventName, status: 'active', seatsAvailable: { $gt: 0 } })
+    .sort({ departureTime: 1 })
+    .toArray();
+
+  return {
+    ride: {
+      _id: ride._id.toString(),
+      driverName: ride.driverName as string,
+      driverPhoto: ride.driverPhoto as string | undefined,
+      eventName: ride.eventName as string,
+      eventLocation: ride.eventLocation as string,
+      eventImage: ride.eventImage as string | undefined,
+      startLocation: ride.startLocation as string,
+      departureTime: (ride.departureTime as Date).toISOString(),
+      estimatedArrivalTime: (ride.estimatedArrivalTime as Date).toISOString(),
+      seats: ride.seats as number,
+      seatsAvailable: ride.seatsAvailable as number,
+      pricePerPerson: ride.pricePerPerson as number,
+      status: ride.status as string
+    },
+    allRides: allRides.map(r => ({
+      _id: r._id.toString(),
+      driverName: r.driverName as string,
+      driverPhoto: r.driverPhoto as string | undefined,
+      startLocation: r.startLocation as string,
+      departureTime: (r.departureTime as Date).toISOString(),
+      estimatedArrivalTime: (r.estimatedArrivalTime as Date).toISOString(),
+      seats: r.seats as number,
+      seatsAvailable: r.seatsAvailable as number,
+      pricePerPerson: r.pricePerPerson as number
+    }))
+  };
 };

@@ -1,90 +1,77 @@
 <script lang="ts">
-	import type { Ride } from '$lib/types';
+  import RideCard from '$lib/components/RideCard.svelte';
+  import { formatDate } from '$lib/time';
 
-	let { data }: { data: { ride: Ride } } = $props();
-	let ride = $derived(data.ride);
+  let { data } = $props();
 </script>
 
 <svelte:head>
-	<title>EventRide – {ride.eventName}</title>
+  <title>{data.ride.eventName} – EventRide</title>
 </svelte:head>
 
-<!-- Zurück-Link -->
-<a href="/" class="mb-6 flex items-center gap-1 text-sm text-gray-500 hover:text-rose-600">
-	← Alle Fahrten
-</a>
+<div class="flex flex-col min-h-screen">
+  <div class="relative">
+    {#if data.ride.eventImage}
+      <img src={data.ride.eventImage} alt={data.ride.eventName} class="w-full h-52 object-cover rounded-b-3xl" />
+    {:else}
+      <div class="w-full h-52 bg-gradient-to-br from-rose-400 to-rose-600 rounded-b-3xl flex items-center justify-center">
+        <span class="text-white text-5xl">🎵</span>
+      </div>
+    {/if}
+    <a href="/" class="absolute top-4 left-4 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow">
+      <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <button class="absolute top-4 right-4 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow">
+      <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+      </svg>
+    </button>
+  </div>
 
-<!-- Event-Header -->
-<div class="mb-4 rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 px-6 py-6 text-white">
-	<span class="text-xs font-semibold tracking-wider uppercase opacity-75">Mitfahrgelegenheit</span>
-	<h1 class="mt-1 text-2xl font-black">{ride.eventName}</h1>
-	<p class="mt-1 text-rose-100">ab {ride.startLocation}</p>
+  <div class="px-4 pt-4">
+    <h1 class="text-xl font-bold text-gray-900">{data.ride.eventName}</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{data.ride.eventLocation} · {formatDate(data.ride.departureTime)}</p>
+  </div>
+
+  <div class="px-4 mt-4">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+      </svg>
+      <input type="text" placeholder="Dein Abholstandort" class="w-full pl-9 pr-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300" />
+    </div>
+  </div>
+
+  <div class="px-4 mt-6">
+    <h2 class="font-bold text-gray-900 text-lg mb-3">Aktuelle Mitfahrgelegenheiten</h2>
+    {#if data.allRides.length === 0}
+      <p class="text-gray-500 text-sm text-center py-8">Noch keine Fahrten für diesen Event</p>
+    {:else}
+      <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        {#each data.allRides as ride}
+          <div class="min-w-[280px]">
+            <RideCard {ride} eventId={data.ride._id} />
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  <div class="px-4 mt-6 flex flex-col items-center gap-3">
+    <div class="flex items-center gap-3 w-full">
+      <div class="flex-1 h-px bg-gray-200"></div>
+      <span class="text-gray-400 text-sm">Oder</span>
+      <div class="flex-1 h-px bg-gray-200"></div>
+    </div>
+    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+    </svg>
+    <a href="/rides/new" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold text-sm text-center hover:bg-gray-800 transition-colors">
+      Mitfahrgelegenheit anbieten
+    </a>
+  </div>
+
+  <div class="h-8"></div>
 </div>
-
-<!-- Details-Karte -->
-<div class="mb-4 rounded-2xl bg-white p-6 shadow-md">
-	<h2 class="mb-4 text-sm font-semibold tracking-wide text-gray-400 uppercase">Reisedaten</h2>
-
-	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-		<div class="rounded-xl bg-gray-50 p-3">
-			<span class="block text-xs text-gray-400">Abfahrt</span>
-			<span class="mt-1 block text-base font-bold text-gray-800">{ride.departureTime}</span>
-		</div>
-		<div class="rounded-xl bg-gray-50 p-3">
-			<span class="block text-xs text-gray-400">Treffpunkt</span>
-			<span class="mt-1 block text-base font-bold text-gray-800">{ride.pickupTime}</span>
-		</div>
-		<div class="rounded-xl bg-gray-50 p-3">
-			<span class="block text-xs text-gray-400">Ankunft</span>
-			<span class="mt-1 block text-base font-bold text-gray-800">{ride.arrivalTime}</span>
-		</div>
-	</div>
-
-	<div class="mt-4 grid grid-cols-2 gap-4">
-		<div class="rounded-xl bg-gray-50 p-3">
-			<span class="block text-xs text-gray-400">Freie Plätze</span>
-			<span
-				class="mt-1 block text-base font-bold {ride.seatsAvailable > 0
-					? 'text-green-600'
-					: 'text-red-500'}"
-			>
-				{ride.seatsAvailable} / {ride.seats}
-			</span>
-		</div>
-		<div class="rounded-xl bg-gray-50 p-3">
-			<span class="block text-xs text-gray-400">Preis pro Person</span>
-			<span class="mt-1 block text-base font-bold text-rose-600"
-				>CHF {ride.pricePerPerson.toFixed(2)}</span
-			>
-		</div>
-	</div>
-</div>
-
-<!-- Fahrer-Info -->
-<div class="mb-6 flex items-center gap-3 rounded-2xl bg-white p-4 shadow-md">
-	<div
-		class="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-xl font-black text-rose-600"
-	>
-		{ride.driverName[0].toUpperCase()}
-	</div>
-	<div>
-		<span class="block text-xs text-gray-400">Fahrer</span>
-		<span class="block font-bold text-gray-800">{ride.driverName}</span>
-	</div>
-</div>
-
-<!-- Buchungs-Formular -->
-{#if ride.seatsAvailable > 0}
-	<form method="POST" action="?/book">
-		<button
-			type="submit"
-			class="w-full rounded-full bg-rose-600 py-4 text-base font-black text-white shadow-lg transition hover:bg-rose-700 active:scale-95"
-		>
-			🚗 Jetzt mitfahren – CHF {ride.pricePerPerson.toFixed(2)}
-		</button>
-	</form>
-{:else}
-	<div class="w-full rounded-full bg-gray-200 py-4 text-center text-base font-black text-gray-500">
-		😔 Leider ausgebucht
-	</div>
-{/if}
