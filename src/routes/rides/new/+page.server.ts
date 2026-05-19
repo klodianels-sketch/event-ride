@@ -1,59 +1,67 @@
-import { fail, redirect, isRedirect } from '@sveltejs/kit';
-import { connectDB } from '$lib/db';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
+import { fail, redirect } from '@sveltejs/kit';
+import { getDb } from '$lib/db';
+import { ObjectId } from 'mongodb';
+
+export const load: PageServerLoad = ({ locals }) => {
+  if (!locals.user) redirect(302, '/auth/login');
+  return {};
+};
 
 export const actions: Actions = {
-	default: async ({ request }) => {
-		const formData = await request.formData();
+  default: async ({ request, locals }) => {
+    if (!locals.user) redirect(302, '/auth/login');
 
-		const fields = {
-			eventName: formData.get('eventName') as string,
-			startLocation: formData.get('startLocation') as string,
-			departureTime: formData.get('departureTime') as string,
-			pickupTime: formData.get('pickupTime') as string,
-			arrivalTime: formData.get('arrivalTime') as string,
-			seats: formData.get('seats') as string,
-			pricePerPerson: formData.get('pricePerPerson') as string,
-			driverName: formData.get('driverName') as string
-		};
+    const data = await request.formData();
+    const eventName = (data.get('eventName') as string || '').trim();
+    const eventLocation = (data.get('eventLocation') as string || '').trim();
+    const startLocation = (data.get('startLocation') as string || '').trim();
+    const departureDatetime = data.get('departureTime') as string || '';
+    const arrivalDatetime = data.get('estimatedArrivalTime') as string || '';
+    const seatsRaw = parseInt(data.get('seats') as string || '0');
+    const priceRaw = parseFloat(data.get('pricePerPerson') as string || '0');
 
-		// Pflichtfelder prüfen
-		for (const [key, value] of Object.entries(fields)) {
-			if (!value || value.trim() === '') {
-				return fail(400, { error: `Bitte fülle alle Pflichtfelder aus.`, fields });
-			}
-		}
+    if (!eventName || !eventLocation || !startLocation || !departureDatetime || !arrivalDatetime) {
+      return fail(400, { error: 'Alle Pflichtfelder müssen ausgefüllt sein.' });
+    }
 
-		const seats = Number(fields.seats);
-		const price = Number(fields.pricePerPerson);
+    const departureTime = new Date(departureDatetime);
+    const estimatedArrivalTime = new Date(arrivalDatetime);
 
-		if (isNaN(seats) || seats < 1 || seats > 8) {
-			return fail(400, { error: 'Anzahl Sitzplätze muss zwischen 1 und 8 liegen.', fields });
-		}
-		if (isNaN(price) || price < 0) {
-			return fail(400, { error: 'Preis muss eine positive Zahl sein.', fields });
-		}
+    if (isNaN(departureTime.getTime()) || isNaN(estimatedArrivalTime.getTime())) {
+      return fail(400, { error: 'Ungültige Zeitangaben.' });
+    }
 
-		try {
-			const db = await connectDB();
-			const result = await db.collection('rides').insertOne({
-				eventName: fields.eventName.trim(),
-				startLocation: fields.startLocation.trim(),
-				departureTime: fields.departureTime.trim(),
-				pickupTime: fields.pickupTime.trim(),
-				arrivalTime: fields.arrivalTime.trim(),
-				seats,
-				seatsAvailable: seats,
-				pricePerPerson: price,
-				driverName: fields.driverName.trim(),
-				createdAt: new Date()
-			});
+    if (departureTime.getTime() - Date.now() < 60 * 60 * 1000) {
+      return fail(400, { error: 'Die Abfahrtszeit muss mindestens 1 Stunde in der Zukunft liegen.' });
+    }
 
-			redirect(303, `/?created=${result.insertedId.toString()}`);
-		} catch (err) {
-			if (isRedirect(err)) throw err;
-			console.error('[rides/new] DB insert failed:', err);
-			return fail(500, { error: 'Datenbankfehler. Bitte versuche es erneut.', fields });
-		}
-	}
+    if (seatsRaw < 1 || seatsRaw > 8) {
+      return fail(400, { error: 'Bitte 1 bis 8 Sitzplätze angeben.' });
+    }
+
+    if (priceRaw < 1 || priceRaw > 200) {
+      return fail(400, { error: 'Der Preis muss zwischen CHF 1 und CHF 200 liegen.' });
+    }
+
+    const db = await getDb();
+    const result = await db.collection('rides').insertOne({
+      driverId: new ObjectId(locals.user.id),
+      driverName: `${locals.user.firstName} ${locals.user.lastName}`,
+      driverPhoto: locals.user.profilePicture,
+      eventName,
+      eventLocation,
+      startLocation,
+      departureTime,
+      estimatedArrivalTime,
+      seats: seatsRaw,
+      seatsAvailable: seatsRaw,
+      pricePerPerson: priceRaw,
+      fairplayWindowMinutes: 10,
+      status: 'active',
+      createdAt: new Date()
+    });
+
+    redirect(302, `/rides/${result.insertedId}/publish-success`);
+  }
 };

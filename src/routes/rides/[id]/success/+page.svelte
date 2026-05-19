@@ -1,33 +1,14 @@
-<script lang="ts">
-	// Erfolgsseite nach der Buchung
-</script>
-
 <svelte:head>
-	<title>EventRide – Buchung erfolgreich!</title>
+  <title>Buchung erfolgreich – EventRide</title>
 </svelte:head>
 
-<div class="flex flex-col items-center py-12 text-center">
-	<div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-green-100 text-5xl">
-		✅
-	</div>
-
-	<h1 class="text-3xl font-black text-gray-800">Platz reserviert!</h1>
-	<p class="mt-3 max-w-sm text-gray-500">
-		Deine Mitfahrgelegenheit wurde erfolgreich gebucht. Viel Spass am Event!
-	</p>
-
-	<div class="mt-8 flex flex-col gap-3 sm:flex-row">
-		<a
-			href="/"
-			class="rounded-full bg-rose-600 px-6 py-3 text-sm font-bold text-white hover:bg-rose-700"
-		>
-			← Zurück zur Übersicht
-		</a>
-		<a
-			href="/rides/new"
-			class="rounded-full border border-rose-200 px-6 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50"
-		>
-			Eigene Fahrt anbieten
-		</a>
-	</div>
+<div class="flex flex-col min-h-screen items-center justify-center px-6 text-center">
+  <div class="text-7xl mb-6">✓</div>
+  <h1 class="text-2xl font-bold text-gray-900">Mitfahrt erfolgreich!</h1>
+  <p class="text-gray-500 text-sm mt-3 leading-relaxed max-w-xs">
+    Deine Buchung wurde bestätigt. Achte auf die Zeitangaben und sei pünktlich an deinem Abholort.
+  </p>
+  <a href="/my/bookings" class="mt-8 text-rose-600 font-semibold text-sm">
+    Meine Buchungen anzeigen →
+  </a>
 </div>
