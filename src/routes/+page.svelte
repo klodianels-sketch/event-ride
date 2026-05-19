@@ -13,7 +13,7 @@
     { name: 'Sport', initial: 'SP', color: 'bg-orange-100', textColor: 'text-orange-600' }
   ];
 
-  let searchValue = $state(data.search || '');
+  let searchValue = $state(data.search ?? '');
 </script>
 
 <svelte:head>
