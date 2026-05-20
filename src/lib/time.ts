@@ -12,9 +12,17 @@ export function formatDateTime(date: Date | string): string {
   return `${formatDate(date)}, ${formatTime(date)}`;
 }
 
-export function calcPickupTimes(departureTime: Date) {
-  const estimatedPickupTime = new Date(departureTime.getTime() + 20 * 60 * 1000);
-  const mustArriveBy = new Date(estimatedPickupTime.getTime() - 5 * 60 * 1000);
-  const latestArrivalTime = new Date(mustArriveBy.getTime() + 10 * 60 * 1000);
-  return { estimatedPickupTime, mustArriveBy, latestArrivalTime };
+export function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.getTime() + minutes * 60_000);
+}
+
+// Berechnet Bereitschaftszeiten ab der geschaetzten Abholzeit
+export function calcReadyTimes(
+  estimatedPickupTime: Date,
+  fairplayWindowMinutes = 15
+): { recommendedReadyTime: Date; latestReadyTime: Date } {
+  return {
+    recommendedReadyTime: addMinutes(estimatedPickupTime, -8),
+    latestReadyTime: addMinutes(estimatedPickupTime, fairplayWindowMinutes)
+  };
 }

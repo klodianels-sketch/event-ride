@@ -52,7 +52,7 @@
       <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {#each data.allRides as ride}
           <div class="min-w-[280px]">
-            <RideCard {ride} eventId={data.ride._id} />
+            <RideCard {ride} />
           </div>
         {/each}
       </div>
