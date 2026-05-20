@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 import { createSession } from '$lib/auth';
 
 export const load: PageServerLoad = ({ locals }) => {
-  if (locals.user) redirect(302, '/');
+  if (locals.user) throw redirect(302, '/');
   return {};
 };
 
@@ -33,12 +33,12 @@ export const actions: Actions = {
     const token = await createSession(user._id);
     cookies.set('sessionToken', token, {
       httpOnly: true,
-      secure: true,
+      secure: false, // <-- Das ist der wichtige Fix für deinen lokalen Server!
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/'
     });
 
-    redirect(302, '/');
+    throw redirect(302, '/');
   }
 };

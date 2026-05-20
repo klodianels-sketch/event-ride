@@ -1,0 +1,127 @@
+import type { WithId, Document } from 'mongodb';
+import type { TimeAccuracy } from '$lib/routing';
+
+// Oeffentliches Ride-DTO — sicher an jeden Client sendbar.
+// NIEMALS startLocationExact, startCoords (exact) oder interne IDs hineingeben.
+export interface PublicRideDTO {
+  _id: string;
+  driverName: string;
+  driverPhoto?: string;
+  eventName: string;
+  eventLocation: string;
+  eventImage?: string;
+  // Stadtebene-Koordinaten des Fahrer-Startorts — fuer Haversine-Vorschau im Browser OK
+  startCoordsRough?: { lat: number; lon: number };
+  // Event-Koordinaten — oeffentlich (Veranstaltungsort ist bekannt)
+  eventLocationCoords?: { lat: number; lon: number };
+  startLocation: string; // grobe Stadt, nie exakte Adresse
+  departureTime: string;
+  estimatedArrivalTime: string;
+  seats: number;
+  seatsAvailable: number;
+  pricePerPerson: number;
+  fairplayWindowMinutes: number;
+  noShowPolicy: { waitMinutes: number; penaltyPercent: number };
+  routeVersion: number;
+  status: string;
+}
+
+// Was ein Mitfahrer ueber seine eigene Buchung sehen darf
+export interface PublicBookingDTO {
+  _id: string;
+  pickupLocation: string;
+  estimatedPickupTime: string;
+  recommendedReadyTime: string;
+  latestReadyTime: string;
+  estimatedArrivalAtEvent?: string;
+  bookedPrice?: number;
+  timeAccuracy?: TimeAccuracy;
+  routeVersion?: number;
+  status: string;
+  paymentStatus: string;
+  noShowPolicySnapshot?: { waitMinutes: number; penaltyPercent: number };
+  ride?: {
+    eventName: string;
+    eventLocation: string;
+    departureTime: string;
+    driverName: string;
+    pricePerPerson: number;
+    startLocation: string;
+  };
+}
+
+function toISO(v: unknown): string {
+  if (!v) return new Date(0).toISOString();
+  if (v instanceof Date) return v.toISOString();
+  return new Date(v as string).toISOString();
+}
+
+function parseCoords(raw: unknown): { lat: number; lon: number } | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const c = raw as { lat?: unknown; lon?: unknown };
+  const lat = parseFloat(String(c.lat ?? ''));
+  const lon = parseFloat(String(c.lon ?? ''));
+  if (isNaN(lat) || isNaN(lon)) return undefined;
+  return { lat, lon };
+}
+
+export function toPublicRideDTO(r: WithId<Document>): PublicRideDTO {
+  const noShowPolicy = (r.noShowPolicy as { waitMinutes: number; penaltyPercent: number } | undefined) ?? {
+    waitMinutes: 15,
+    penaltyPercent: 100
+  };
+  return {
+    _id: r._id.toString(),
+    driverName: r.driverName as string,
+    driverPhoto: r.driverPhoto as string | undefined,
+    eventName: r.eventName as string,
+    eventLocation: r.eventLocation as string,
+    eventImage: r.eventImage as string | undefined,
+    startLocation: r.startLocation as string,
+    startCoordsRough: parseCoords(r.startCoordsRough),
+    eventLocationCoords: parseCoords(r.eventLocationCoords),
+    departureTime: toISO(r.departureTime),
+    estimatedArrivalTime: toISO(r.estimatedArrivalTime),
+    seats: r.seats as number,
+    seatsAvailable: r.seatsAvailable as number,
+    pricePerPerson: r.pricePerPerson as number,
+    fairplayWindowMinutes: (r.fairplayWindowMinutes as number) ?? 10,
+    noShowPolicy,
+    routeVersion: (r.routeVersion as number) ?? 0,
+    status: r.status as string
+  };
+}
+
+export function toPublicBookingDTO(
+  b: WithId<Document>,
+  ride?: WithId<Document> | null
+): PublicBookingDTO {
+  const noShowSnapshot = b.noShowPolicySnapshot as
+    | { waitMinutes: number; penaltyPercent: number }
+    | undefined;
+
+  return {
+    _id: b._id.toString(),
+    pickupLocation: b.pickupLocation as string,
+    estimatedPickupTime: toISO(b.estimatedPickupTime),
+    recommendedReadyTime: toISO(b.recommendedReadyTime ?? b.mustArriveBy),
+    latestReadyTime: toISO(b.latestReadyTime ?? b.latestArrivalTime),
+    estimatedArrivalAtEvent: b.estimatedArrivalAtEvent ? toISO(b.estimatedArrivalAtEvent) : undefined,
+    bookedPrice: b.bookedPrice as number | undefined,
+    timeAccuracy: b.timeAccuracy as TimeAccuracy | undefined,
+    routeVersion: b.routeVersion as number | undefined,
+    status: b.status as string,
+    paymentStatus: b.paymentStatus as string,
+    noShowPolicySnapshot: noShowSnapshot,
+    ride: ride
+      ? {
+          eventName: ride.eventName as string,
+          eventLocation: ride.eventLocation as string,
+          departureTime: toISO(ride.departureTime),
+          driverName: ride.driverName as string,
+          pricePerPerson: ride.pricePerPerson as number,
+          startLocation: ride.startLocation as string
+        }
+      : undefined
+  };
+}

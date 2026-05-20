@@ -8,8 +8,8 @@
 <div class="min-h-screen bg-gray-50 flex justify-center">
   <div class="w-full max-w-[430px] bg-white min-h-screen relative pb-20">
     {@render children()}
-    {#if data.user}
-      <BottomNav />
-    {/if}
+    
+    <BottomNav />
+    
   </div>
 </div>
