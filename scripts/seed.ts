@@ -7,7 +7,7 @@
  */
 
 import { MongoClient, ObjectId } from 'mongodb';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { readFileSync } from 'fs';
 
 function loadEnvFile(path: string): void {

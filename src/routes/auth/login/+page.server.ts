@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { getDb } from '$lib/db';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { createSession } from '$lib/auth';
 
 export const load: PageServerLoad = ({ locals }) => {
