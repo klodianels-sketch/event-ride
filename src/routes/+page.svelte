@@ -4,10 +4,11 @@
   import RideCard from '$lib/components/RideCard.svelte';
   import { haversineSeconds } from '$lib/routing';
   import type { PublicRideDTO } from '$lib/dto';
+  import type { EventCategory } from '$lib/types';
 
   let { data } = $props();
 
-  // ── Mitfahrer-Abholort ───────────────────────────────────────────────
+  // ── Abholort ─────────────────────────────────────────────────
   let pickupInput = $state('');
   let pickupCoords = $state<{ lat: number; lon: number } | null>(null);
   let pickupConfirmed = $state('');
@@ -16,6 +17,26 @@
   let pickupGpsError = $state('');
   let pickupTypingTimer: ReturnType<typeof setTimeout> | null = null;
   let showPickupDropdown = $state(false);
+
+  // ── Kategorie-Filter ─────────────────────────────────────────
+  let activeCategory = $state<EventCategory | 'all'>('all');
+
+  type CatChip = { key: EventCategory | 'all'; emoji: string; label: string };
+  const CHIPS: CatChip[] = [
+    { key: 'all',      emoji: '🗺️', label: 'Alle'      },
+    { key: 'music',    emoji: '🎵', label: 'Musik'     },
+    { key: 'festival', emoji: '🎪', label: 'Festival'  },
+    { key: 'nightlife',emoji: '🌙', label: 'Nightlife' },
+    { key: 'sport',    emoji: '⚡', label: 'Sport'     },
+    { key: 'hiking',   emoji: '🏔️', label: 'Outdoor'   },
+    { key: 'culture',  emoji: '🎭', label: 'Kultur'    },
+  ];
+
+  const filteredRides = $derived(
+    activeCategory === 'all'
+      ? data.rides
+      : data.rides.filter((r: PublicRideDTO) => r.eventCategory === activeCategory)
+  );
 
   onMount(() => {
     if (!browser) return;
@@ -52,7 +73,6 @@
   function onPickupInput() {
     if (pickupTypingTimer) clearTimeout(pickupTypingTimer);
     showPickupDropdown = true;
-    // Koordinaten zuruecksetzen bis Nutzer neu aus Liste waehlt
     pickupCoords = null;
     pickupConfirmed = '';
     if (pickupInput.length < 3) { pickupSuggestions = []; return; }
@@ -77,7 +97,7 @@
 
   async function getPickupFromGps() {
     if (!browser || !navigator.geolocation) {
-      pickupGpsError = 'Geolocation ist in diesem Browser nicht verfuegbar.';
+      pickupGpsError = 'Standortermittlung ist in diesem Browser nicht verfuegbar.';
       return;
     }
     pickupGpsLoading = true;
@@ -87,7 +107,6 @@
         navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 })
       );
       const { latitude, longitude } = pos.coords;
-      // Ohne User-Agent (Browser-Einschraenkung) — Nominatim meist tolerant
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
       );
@@ -103,15 +122,14 @@
     } catch (err: any) {
       pickupGpsError =
         err?.code === 1
-          ? 'Standortzugriff verweigert. Bitte Einstellung im Browser pruefen.'
+          ? 'Standortzugriff verweigert. Bitte die Einstellung im Browser pruefen.'
           : 'Standort konnte nicht ermittelt werden.';
     } finally {
       pickupGpsLoading = false;
     }
   }
 
-  // ── Personalisierte Vorschau ─────────────────────────────────────────
-  // Haversine-Schaetzung, client-seitig, kein OSRM
+  // ── Haversine-Vorschau (Client) ──────────────────────────────
   function calcPreview(ride: PublicRideDTO) {
     if (!pickupCoords || !ride.startCoordsRough || !ride.eventLocationCoords) return null;
     const { lat: sLat, lon: sLon } = ride.startCoordsRough;
@@ -129,76 +147,98 @@
     return { estimatedPickupTime, estimatedArrivalAtEvent, detourMinutes };
   }
 
-  // Zeigt an ob ein Ride Preview-faehig ist (hat Koordinaten)
-  function rideHasCoords(ride: PublicRideDTO): boolean {
-    return !!(ride.startCoordsRough && ride.eventLocationCoords);
-  }
-
-  // Ob irgendein Ride noch keine Koordinaten hat (fuer Hinweistext)
   const anyMissingCoords = $derived(
-    pickupCoords !== null && data.rides.some(r => !rideHasCoords(r))
+    pickupCoords !== null && filteredRides.some((r: PublicRideDTO) => !r.startCoordsRough || !r.eventLocationCoords)
+  );
+
+  // Aktive Kategorie Label fuer den Listentitel
+  const activeCatLabel = $derived(
+    CHIPS.find(c => c.key === activeCategory)?.label ?? 'Fahrten'
   );
 </script>
 
 <svelte:head>
-  <title>EventRide – Mitfahrgelegenheiten fuer Events</title>
+  <title>EventRide – Mitfahren zu Events</title>
 </svelte:head>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div
-  class="flex flex-col min-h-screen"
-  onclick={() => { showPickupDropdown = false; }}
->
-  <div class="px-4 pt-12 pb-3">
-    <p class="text-gray-500 text-sm">Willkommen bei</p>
-    <h1 class="text-2xl font-bold text-gray-900">EventRide</h1>
-  </div>
+<div class="flex flex-col min-h-screen" onclick={() => { showPickupDropdown = false; }}>
 
-  <!-- Abholort-Widget ─────────────────────────────────────────────────── -->
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="px-4 pb-3" onclick={(e) => e.stopPropagation()}>
-    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3">
-      <p class="text-xs font-semibold text-rose-700 mb-2 uppercase tracking-wide">Dein Abholort</p>
+  <!-- Header ──────────────────────────────────────────────────── -->
+  <div class="bg-gradient-to-b from-rose-600 to-rose-500 px-4 pt-12 pb-5">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <p class="text-rose-200 text-xs font-semibold tracking-widest uppercase">EventRide</p>
+        <h1 class="text-white text-2xl font-bold leading-tight">
+          {#if data.user}
+            Hallo, {data.user.firstName}!
+          {:else}
+            Entdecke Events 🎉
+          {/if}
+        </h1>
+      </div>
+      {#if data.user}
+        <a href="/my/profile" class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/30 hover:ring-white/60 transition-all">
+          {#if data.user.avatarUrl}
+            <img src={data.user.avatarUrl} alt="{data.user.firstName}" class="w-full h-full object-cover" />
+          {:else}
+            <div class="w-full h-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">
+              {data.user.firstName[0]}{data.user.lastName[0]}
+            </div>
+          {/if}
+        </a>
+      {:else}
+        <a href="/auth/login" class="bg-white text-rose-600 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-rose-50 transition-colors">
+          Anmelden
+        </a>
+      {/if}
+    </div>
 
+    <!-- Abholort-Widget ─────────────────────────────────────────── -->
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div onclick={(e) => e.stopPropagation()}>
       {#if pickupConfirmed && pickupCoords}
-        <!-- Zustand: Abholort gesetzt ─────────── -->
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 flex-1 min-w-0">
-            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-            <span class="text-sm font-medium text-gray-900 truncate">{pickupConfirmed}</span>
+        <div class="bg-white/15 backdrop-blur rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 flex-1 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-white/70 text-xs">Dein Abholort</p>
+              <p class="text-white font-semibold text-sm truncate">{pickupConfirmed}</p>
+            </div>
           </div>
           <button
             type="button"
             onclick={clearPickup}
-            class="text-xs text-rose-600 font-semibold shrink-0 hover:text-rose-800 transition-colors"
+            class="text-white/70 text-xs font-semibold shrink-0 hover:text-white transition-colors px-2 py-1"
           >
             Aendern
           </button>
         </div>
-        <p class="text-xs text-rose-600 mt-1.5 leading-relaxed">
-          {#if anyMissingCoords}
-            Personalisierte Zeiten laden beim naechsten Refresh.
-          {:else}
-            Fahrtzeiten unten sind auf deinen Abholort angepasst.
-          {/if}
-        </p>
+        {#if anyMissingCoords}
+          <p class="text-rose-200 text-xs mt-1.5 px-1">Zeiten werden beim naechsten Laden aktualisiert.</p>
+        {:else}
+          <p class="text-rose-200 text-xs mt-1.5 px-1">Abholzeiten unten sind auf deinen Standort angepasst.</p>
+        {/if}
       {:else}
-        <!-- Zustand: Kein Abholort ──────────── -->
+        <!-- Abholort-Eingabe -->
         <div class="relative">
           <div class="flex gap-2">
             <div class="flex-1 relative">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
               </svg>
               <input
                 type="text"
                 bind:value={pickupInput}
                 oninput={onPickupInput}
-                placeholder="z.B. Winterthur Bahnhof"
+                onfocus={() => { if (pickupInput.length >= 3) showPickupDropdown = true; }}
+                placeholder="Abholort eingeben..."
                 autocomplete="off"
-                class="w-full pl-9 pr-3 py-2.5 bg-white border border-rose-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
+                class="w-full pl-9 pr-3 py-3 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 shadow-sm"
               />
             </div>
             <button
@@ -207,7 +247,7 @@
               disabled={pickupGpsLoading}
               title="Aktuellen Standort verwenden"
               aria-label="GPS-Standort verwenden"
-              class="px-3 bg-white border border-rose-200 rounded-xl hover:bg-rose-50 transition-colors disabled:opacity-50 flex items-center"
+              class="px-3 bg-white rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center shadow-sm"
             >
               {#if pickupGpsLoading}
                 <svg class="w-4 h-4 text-rose-400 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -230,14 +270,19 @@
                   <button
                     type="button"
                     onclick={(e) => { e.stopPropagation(); selectPickupSuggestion(s); }}
-                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0 flex items-center gap-2"
                   >
-                    <span class="font-medium">{s.properties.name ?? ''}</span>
-                    {#if s.properties.city || s.properties.county}
-                      <span class="text-gray-400 ml-1">
-                        {[s.properties.city, s.properties.county].filter(Boolean).join(', ')}
-                      </span>
-                    {/if}
+                    <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <div>
+                      <span class="font-medium">{s.properties.name ?? ''}</span>
+                      {#if s.properties.city || s.properties.county}
+                        <span class="text-gray-400 ml-1 text-xs">
+                          {[s.properties.city, s.properties.county].filter(Boolean).join(', ')}
+                        </span>
+                      {/if}
+                    </div>
                   </button>
                 </li>
               {/each}
@@ -246,19 +291,32 @@
         </div>
 
         {#if pickupGpsError}
-          <p class="text-xs text-red-600 mt-1">{pickupGpsError}</p>
-        {/if}
-        {#if !pickupGpsError}
-          <p class="text-xs text-rose-400 mt-1.5">
-            Abholort setzen, um personalisierte Abholzeiten zu sehen.
-          </p>
+          <p class="text-rose-200 text-xs mt-1.5 px-1">{pickupGpsError}</p>
+        {:else}
+          <p class="text-rose-200/80 text-xs mt-1.5 px-1">Abholort eingeben → Zeiten werden personalisiert</p>
         {/if}
       {/if}
     </div>
   </div>
 
-  <!-- Suche ──────────────────────────────────────────────────────────── -->
-  <div class="px-4 pb-4">
+  <!-- Kategorie-Chips ─────────────────────────────────────────── -->
+  <div class="px-4 py-3 overflow-x-auto flex gap-2 scrollbar-hide border-b border-gray-100 bg-white">
+    {#each CHIPS as chip}
+      <button
+        type="button"
+        onclick={() => { activeCategory = chip.key; }}
+        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all {activeCategory === chip.key
+          ? 'bg-rose-600 text-white shadow-sm'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+      >
+        <span>{chip.emoji}</span>
+        <span>{chip.label}</span>
+      </button>
+    {/each}
+  </div>
+
+  <!-- Suche ──────────────────────────────────────────────────── -->
+  <div class="px-4 pt-4 pb-2 bg-white">
     <form method="GET" class="flex gap-2">
       <div class="flex-1 relative">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -281,37 +339,55 @@
     </form>
   </div>
 
-  <!-- Fahrten-Liste ──────────────────────────────────────────────────── -->
-  <div class="px-4 flex-1">
+  <!-- Fahrten-Feed ────────────────────────────────────────────── -->
+  <div class="px-4 pt-3 flex-1 bg-white">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-bold text-gray-900 text-lg">
-        {data.search ? `Ergebnisse fuer "${data.search}"` : 'Mitfahrgelegenheiten'}
+      <h2 class="font-bold text-gray-900">
+        {data.search
+          ? `Ergebnisse fuer &quot;${data.search}&quot;`
+          : activeCategory === 'all'
+            ? 'Mitfahrgelegenheiten'
+            : activeCatLabel}
       </h2>
-      {#if data.rides.length > 0}
-        <span class="text-sm text-gray-400">{data.rides.length}</span>
+      {#if filteredRides.length > 0}
+        <span class="text-sm text-gray-400 font-medium">{filteredRides.length}</span>
       {/if}
     </div>
 
-    {#if data.rides.length === 0}
+    {#if filteredRides.length === 0}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25"/>
-          </svg>
-        </div>
-        {#if data.search}
-          <p class="text-gray-500 text-sm">Keine Fahrten fuer "{data.search}" gefunden.</p>
-          <a href="/" class="mt-3 text-rose-600 font-semibold text-sm">Alle Fahrten anzeigen</a>
+        {#if activeCategory !== 'all'}
+          <div class="text-5xl mb-4">{CHIPS.find(c => c.key === activeCategory)?.emoji}</div>
+          <p class="font-semibold text-gray-800 mb-1">Noch keine {activeCatLabel}-Fahrten</p>
+          <p class="text-gray-400 text-sm mb-4">Sei der Erste und biete eine Fahrt an.</p>
+          <button
+            type="button"
+            onclick={() => { activeCategory = 'all'; }}
+            class="text-rose-600 font-semibold text-sm mb-2"
+          >
+            Alle Fahrten anzeigen
+          </button>
+        {:else if data.search}
+          <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+            </svg>
+          </div>
+          <p class="font-semibold text-gray-800 mb-1">Keine Fahrten gefunden</p>
+          <p class="text-gray-400 text-sm mb-4">Fuer &quot;{data.search}&quot; gibt es noch nichts.</p>
+          <a href="/" class="text-rose-600 font-semibold text-sm mb-2">Alle Fahrten anzeigen</a>
         {:else}
-          <p class="text-gray-500 text-sm">Noch keine Fahrten verfuegbar.</p>
+          <div class="text-5xl mb-4">🚗</div>
+          <p class="font-semibold text-gray-800 mb-1">Noch keine Fahrten verfuegbar</p>
+          <p class="text-gray-400 text-sm mb-5">Leg los und biete die erste Fahrt an!</p>
         {/if}
-        <a href="/rides/new" class="mt-4 bg-rose-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-rose-700 transition-colors">
-          Erste Fahrt anbieten
+        <a href="/rides/new" class="bg-rose-600 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-rose-700 transition-colors">
+          Fahrt anbieten
         </a>
       </div>
     {:else}
-      <div class="flex flex-col gap-4 pb-6">
-        {#each data.rides as ride (ride._id)}
+      <div class="flex flex-col gap-4 pb-8">
+        {#each filteredRides as ride (ride._id)}
           {@const preview = calcPreview(ride)}
           <RideCard {ride} {preview} {pickupCoords} />
         {/each}

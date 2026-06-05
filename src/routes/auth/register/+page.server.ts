@@ -3,6 +3,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { getDb } from '$lib/db';
 import bcrypt from 'bcrypt';
 import { createSession } from '$lib/auth';
+import { DEFAULT_NOTIFICATION_SETTINGS } from '$lib/types';
 
 export const load: PageServerLoad = ({ locals }) => {
   if (locals.user) redirect(302, '/');
@@ -39,9 +40,14 @@ export const actions: Actions = {
       lastName,
       email,
       passwordHash,
+      role: 'user',
       rating: 0,
       totalRatings: 0,
-      createdAt: new Date()
+      isDisabled: false,
+      interests: [],
+      notificationSettings: DEFAULT_NOTIFICATION_SETTINGS,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
     const token = await createSession(result.insertedId);

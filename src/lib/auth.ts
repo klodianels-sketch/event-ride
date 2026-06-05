@@ -1,7 +1,8 @@
+import { error } from '@sveltejs/kit';
 import { getDb } from '$lib/db';
 import { ObjectId } from 'mongodb';
 import { randomUUID } from 'crypto';
-import type { SessionUser } from '$lib/types';
+import type { SessionUser, UserRole } from '$lib/types';
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -28,16 +29,28 @@ export async function getSessionUser(token: string): Promise<SessionUser | null>
   const user = await db.collection('users').findOne({ _id: session.userId });
   if (!user) return null;
 
+  // Gesperrte Nutzer werden wie nicht eingeloggt behandelt
+  if (user.isDisabled) return null;
+
   return {
     id: user._id.toString(),
     firstName: user.firstName as string,
     lastName: user.lastName as string,
     email: user.email as string,
-    profilePicture: user.profilePicture as string | undefined
+    avatarUrl: (user.avatarUrl ?? user.profilePicture) as string | undefined,
+    profilePicture: user.profilePicture as string | undefined,
+    role: ((user.role as UserRole | undefined) ?? 'user')
   };
 }
 
 export async function deleteSession(token: string): Promise<void> {
   const db = await getDb();
   await db.collection('sessions').deleteOne({ token });
+}
+
+// Guard: wirft 403 wenn kein Admin. Serverseitig aufrufen, nie im Client.
+export function requireAdmin(user: SessionUser | null): void {
+  if (!user || user.role !== 'admin') {
+    throw error(403, 'Kein Zugriff — Admin-Berechtigung erforderlich');
+  }
 }
