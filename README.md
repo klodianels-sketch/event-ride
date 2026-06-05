@@ -90,10 +90,10 @@ Einfacher vertikaler Feed mit Ride Cards; Detailseite mit Buchungs-CTA. Orientie
 **Variante B – Detaillierter Flow mit Zwischenstopps und Filteroptionen:**
 Erweiterte Ansicht mit Radius-Filter, verifizierten Mitfahrern, Kalenderfunktion und automatischer Fahrt-Erstellung per Ticket-Scan.
 
-![Skizzen Seite 1](docs/sketches/skizze-variante-a.png)
+![Skizzen Seite 1](docs/images/skizze1.png)
 *Erste Ideenskizzen: verschiedene UI-Konzepte für Feed, Kartenansicht, Chat und Fahrt-Erstellung*
 
-![Skizzen Seite 2](docs/sketches/skizze-variante-b.png)
+![Skizzen Seite 2](docs/images/skizze2.png)
 *Detaillierte Flows: „Neue Fahrt anbieten" und „Mitfahrgelegenheit finden" mit Formularfeldern und Ergebnisliste*
 
 **Variante C – Event-first:**
@@ -121,21 +121,18 @@ Nutzer suchen zuerst das Event, dann passende Fahrten dazu. Stärkt den Eventbez
 
 **Mockup:** Wireframes wurden als Low-Fidelity-Skizzen erstellt und anschliessend in ein interaktives High-Fidelity-Mockup überführt.
 
-**Mockup-URL (Figma):** *(Link hier einfügen)*
+**Mockup-URL (Figma):** https://www.figma.com/design/4jLaSPfl2VyuU7e90qlw60/Prototyping-%C3%9Cbung-10-Klodian-Elshani?node-id=0-1&t=xZOVPIsLPWbwsvan-
 
 Die folgenden Screenshots zeigen die wichtigsten Screens des Mockups:
 
-![Mockup Home](docs/mockup/mockup-home.png)
-*Home-Screen: Event-Feed mit Featured-Event-Banner, Kategoriefilter und Mitfahrangeboten*
+![Mockup Startseite und Buchungsflow](docs/images/figma-startseite-buchung.png)
+*Startseite mit Event-Feed (links) und Buchungsflow – Abholort-Eingabe und Bestätigungsscreen (rechts)*
 
-![Mockup Event-Detail](docs/mockup/mockup-event-detail.png)
-*Event-Detailseite: Verfügbare Mitfahrangebote zum Openair Frauenfeld 2026 mit Fahrer-Info und Abholzeiten*
+![Mockup Buchen und Bestätigung](docs/images/figma-buchen-bestaetigung.png)
+*Buchungsflow: Mitfahrt anfragen (links) und Bestätigungsscreen „Anfrage gesendet!" (rechts)*
 
-![Mockup Buchungsflow](docs/mockup/mockup-buchung.png)
-*Buchungsflow: Mitfahrt anfragen (links) und Bestätigungsscreen „Mitfahrt erfolgreich!" (rechts)*
-
-![Mockup Fahrt erstellen](docs/mockup/mockup-fahrt-erstellen.png)
-*Fahrt anbieten: Eingabeformular (links) und Erfolgsscreen „Fahrt erfolgreich veröffentlicht!" (rechts)*
+![Mockup Fahrt anbieten](docs/images/figma-fahrt-anbieten.png)
+*Fahrt anbieten: Eingabeformular mit Kategorieauswahl, Startort und Zeitangaben*
 
 ---
 
@@ -166,19 +163,19 @@ Die Navigation erfolgt über eine fixierte Bottom Navigation Bar mit Badge-Anzei
 
 Die folgenden Screenshots zeigen die wichtigsten Screens des Prototyps:
 
-![Screen Home](docs/prototype/screen-home.png)
+![Screen Home](docs/images/screen-hauptseite.png)
 *Startseite: Event-Feed mit Kategoriefilter und personalisierten Abholzeiten (EventRide v2)*
 
-![Screen Buchung anfragen](docs/prototype/screen-buchung-anfragen.png)
+![Screen Buchung anfragen](docs/images/screen-buchung.png)
 *Buchungsanfrage: Detailseite mit Zeitvorschau „Spätestens abholbereit" und Abholort-Eingabe*
 
-![Screen Buchung Erfolg](docs/prototype/screen-buchung-erfolg.png)
+![Screen Buchung Erfolg](docs/images/screen-gesendete-anfrage.png)
 *Buchungsbestätigung: „Anfrage gesendet!" mit Fahrer-Info, Preis und Next-Steps-Hinweisen*
 
-![Screen Fahrt erstellen](docs/prototype/screen-fahrt-erstellen.png)
+![Screen Fahrt erstellen](docs/images/screen-gelegenheit-anbieten.png)
 *Fahrt anbieten: Formular mit Kategorieauswahl, Event-Name, Startort und Leaflet-Kartenvorschau*
 
-![Screen Suche](docs/prototype/screen-suche.png)
+![Screen Suche](docs/images/screen-suche.png)
 *Suchseite: Kategorieentdeckung und Suchfeld für Events, Orte und Künstler*
 
 **Designentscheidungen:**
@@ -237,7 +234,7 @@ Privacy-Prinzip: Exakte Startadressen werden nie an den Client gesendet. Das `Pu
 
 **Deployment:**
 - Prototyp (eingefroren): https://eventride-prototype.netlify.app
-- Verbesserte Version (v2): https://eventride-v2.netlify.app
+- Verbesserte Version (v2 Hauptversion): https://eventride-v2.netlify.app
 
 **Besondere Entscheidungen:**
 - Abholzeiten werden erst bei Annahme durch den Fahrer berechnet (nicht bei Anfrage)
@@ -299,38 +296,43 @@ Die Kernflows wurden von beiden Testpersonen erfolgreich durchgeführt. Als grö
 ### 4.1 Spätestens abholbereit – Zeitlogik korrigiert
 - **Beschreibung & Nutzen:** Label „Empfohlen bereit ab" → „Spätestens abholbereit" mit korrekter semantischer Bedeutung. Zusätzlich 30%-Reisezeitpuffer für realistischere ETAs.
 - **Wo umgesetzt:** Frontend `BookingCard.svelte`, Backend `routing.ts`
-- **Referenz:** Kap. 3.5, Testbeobachtung Zeitlabel
+- **Referenz:**
+  ![Erweiterung 4.1 – Zeitlabel](docs/images/erweiterung-4-1.png)
+  *Buchungsscreen mit korrigiertem Label „Spätestens abholbereit" und realistischer Abholzeit-Berechnung*
 - **Aus Evaluation abgeleitet?:** Ja
 
 ### 4.2 Vergangene Fahrten aus öffentlichem Feed
 - **Beschreibung & Nutzen:** Fahrten nach Abfahrtszeit nicht mehr öffentlich sichtbar. Reduziert Verwirrung.
 - **Wo umgesetzt:** `+page.server.ts`, `search/+page.server.ts`, `rides/[id]/+page.server.ts` – MongoDB-Filter `departureTime: { $gt: new Date() }`
-- **Referenz:** Kap. 3.5
+- **Referenz:**
+  ![Erweiterung 4.2 – Bereinigter Feed](docs/images/screen-hauptseite.png)
+  *Startseite: Der Feed zeigt ausschliesslich zukünftige Fahrten; abgelaufene Events werden herausgefiltert*
 - **Aus Evaluation abgeleitet?:** Ja
 
 ### 4.3 Routenvorschau und Zwischenstopps
 - **Beschreibung & Nutzen:** Beim Erstellen wird die Route als Leaflet-Polyline angezeigt. Optionale Zwischenstopps werden in die OSRM-Berechnung einbezogen.
 - **Wo umgesetzt:** `rides/new/+page.svelte`, `rides/new/+page.server.ts`, `api/route/+server.ts`
-- **Referenz:** Kap. 3.4.2
+- **Referenz:**
+  ![Erweiterung 4.3 – Routenvorschau](docs/images/erweiterung-4-3.png)
+  *Fahrt anbieten: Die Route wird nach Eingabe von Start und Ziel als Polyline auf der Leaflet-Karte dargestellt*
 - **Aus Evaluation abgeleitet?:** Teilweise (Routenvorschau war positives Feedback; Zwischenstopps als Ergänzung)
 
 ### 4.4 20-Minuten-Detour-Filter
 - **Beschreibung & Nutzen:** Toggle filtert Fahrten mit Umweg >20 Min heraus. Standardmässig aktiv wenn Abholort gesetzt.
 - **Wo umgesetzt:** `+page.svelte` (clientseitige Haversine-Berechnung)
-- **Referenz:** Kap. 3.4.2
+- **Referenz:**
+  ![Erweiterung 4.4 – Detour-Filter](docs/images/erweiterung-4-4.png)
+  *Feed mit aktivem Detour-Filter: Fahrten mit zu grossem Umweg werden automatisch ausgeblendet*
 - **Aus Evaluation abgeleitet?:** Teilweise
 
 ### 4.5 Event-Autosuggest beim Erstellen
 - **Beschreibung & Nutzen:** Beim Eingeben des Eventnamens werden Vorschläge aus der DB angezeigt (Debounce 250ms).
 - **Wo umgesetzt:** `rides/new/+page.svelte`, `api/events/+server.ts`
-- **Referenz:** Kap. 3.4.1
+- **Referenz:**
+  ![Erweiterung 4.5 – Event-Autosuggest](docs/images/erweiterung-4-5.png)
+  *Fahrt erstellen: Beim Tippen des Eventnamens erscheinen passende Vorschläge aus der Datenbank als Dropdown*
 - **Aus Evaluation abgeleitet?:** Nein
 
-### 4.6 Teilnehmer-Sichtbarkeit (Privacy-by-Design)
-- **Beschreibung & Nutzen:** Bestätigte Mitfahrende als „Vorname I." sichtbar; nur für Fahrer und bestätigte Mitfahrende. Anfragende sehen nur die Anzahl.
-- **Wo umgesetzt:** `rides/[id]/+page.server.ts`, `dto.ts`, `rides/[id]/+page.svelte`
-- **Referenz:** Kap. 3.4.2
-- **Aus Evaluation abgeleitet?:** Nein
 
 ---
 
