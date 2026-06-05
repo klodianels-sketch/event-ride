@@ -2,7 +2,7 @@ import type { WithId, Document } from 'mongodb';
 import type { TimeAccuracy } from '$lib/routing';
 import type { EventCategory } from '$lib/types';
 
-// Oeffentliches Ride-DTO — sicher an jeden Client sendbar.
+// Öffentliches Ride-DTO — sicher an jeden Client sendbar.
 // NIEMALS startLocationExact, startCoords (exact) oder interne IDs hineingeben.
 export interface PublicRideDTO {
   _id: string;
@@ -14,9 +14,9 @@ export interface PublicRideDTO {
   eventCategory?: EventCategory;
   eventLocation: string;
   eventImage?: string;
-  // Stadtebene-Koordinaten des Fahrer-Startorts — fuer Haversine-Vorschau im Browser OK
+  // Stadtkoordinaten des Startorts — für Haversine-Vorschau im Browser
   startCoordsRough?: { lat: number; lon: number };
-  // Event-Koordinaten — oeffentlich (Veranstaltungsort ist bekannt)
+  // Event-Koordinaten — öffentlich (Veranstaltungsort ist bekannt)
   eventLocationCoords?: { lat: number; lon: number };
   startLocation: string; // grobe Stadt, nie exakte Adresse
   departureTime: string;
@@ -29,9 +29,9 @@ export interface PublicRideDTO {
   routeVersion: number;
   status: string;
   // Teilnehmer-Sichtbarkeit (privacy-safe aggregated counts)
-  acceptedCount?: number;   // bestaetigte Mitfahrer
+  acceptedCount?: number;   // bestätigte Mitfahrer
   pendingCount?: number;    // offene Anfragen (nur als Zahl, keine Namen)
-  // Bestaetigte Mitfahrer: nur Vorname + Initial (Vorname A.) — sichtbar fuer alle Beteiligten
+  // Bestätigte Mitfahrer: Vorname + Initial — sichtbar für Fahrer und bestätigte Mitfahrer
   confirmedPassengers?: Array<{ displayName: string }>;
 }
 

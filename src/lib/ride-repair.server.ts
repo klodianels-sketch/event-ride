@@ -28,7 +28,7 @@ export async function ensureRideCoords(
     '';
   const eventQuery = (ride.eventLocation as string | undefined) || '';
 
-  // Geocoding-Calls nur wenn noetig
+  // Geocoding nur wenn Koordinaten fehlen
   const [startResult, eventResult] = await Promise.all([
     !existing.startCoords && startQuery ? geocode(startQuery) : Promise.resolve(null),
     !existing.eventCoords && eventQuery ? geocode(eventQuery) : Promise.resolve(null)

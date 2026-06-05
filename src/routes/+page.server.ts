@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ url }) => {
     .limit(30)
     .toArray();
 
-  // Fire-and-forget: Koordinaten fuer alte Fahrten im Hintergrund reparieren.
+  // Fire-and-forget: Koordinaten für ältere Fahrten im Hintergrund reparieren.
   const ridesNeedingRepair = rides.filter(r => !r.startCoords || !r.eventLocationCoords);
   if (ridesNeedingRepair.length > 0) {
     (async () => {

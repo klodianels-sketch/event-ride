@@ -32,10 +32,10 @@
     expandedRide = expandedRide === rideId ? null : rideId;
   }
 
-  // Optimistisches State-Management fuer Anfragen
+  // Optimistisches State-Management für Anfragen
   let processingBooking = $state<string | null>(null);
 
-  // Storno-Bestaetigung fuer eine Fahrt
+  // Storno-Bestätigung für eine Fahrt
   let confirmCancelRideId = $state<string | null>(null);
 </script>
 

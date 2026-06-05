@@ -1,4 +1,4 @@
-// Shim fuer Rueckwaertskompatibilitaet — neuer Code importiert direkt aus geocoding.ts / routing.ts
+// Rückwärtskompatibilität — direkter Import aus geocoding.ts / routing.ts bevorzugt
 export { geocode as getCoordinates, reverseGeocode } from '$lib/geocoding';
 export type { GeocodingResult } from '$lib/geocoding';
 export { osrmRoute as getRouteDurationRaw } from '$lib/routing';

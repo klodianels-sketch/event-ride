@@ -1,7 +1,7 @@
 export type TimeAccuracy = 'exact' | 'estimated' | 'fallback';
 
 const USER_AGENT = 'EventRideApp/1.0 (ZHAW Student Project)';
-const AVG_SPEED_KMH = 55; // konservativ fuer Schweizer Strassen inkl. Ortsdurchfahrten
+const AVG_SPEED_KMH = 55; // konservativ für Schweizer Strassen inkl. Ortsdurchfahrten
 
 // 30 % Reisezeitpuffer: Stau, Baustellen, Parkplatzsuche, Ortsdurchfahrten
 export const TRAVEL_BUFFER_FACTOR = 1.3;
@@ -27,7 +27,7 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Geschaetzte Fahrtdauer via Haversine inkl. 30 % Puffer — fuer konsistente Vorschau
+// Geschätzte Fahrtdauer via Haversine inkl. 30 % Puffer — für konsistente Vorschau
 export function haversineSeconds(
   lat1: number,
   lon1: number,

@@ -5,7 +5,6 @@ import { ObjectId } from 'mongodb';
 import { geocode } from '$lib/geocoding';
 import { osrmRoute } from '$lib/routing';
 
-// 15 Min Wartefenster, 80 % Einbehalt bei No-Show (fair und konfigurierbar)
 const DEFAULT_NO_SHOW_POLICY = { waitMinutes: 15, penaltyPercent: 80 };
 
 export const load: PageServerLoad = ({ locals }) => {
@@ -42,39 +41,37 @@ export const actions: Actions = {
     } catch { /* ungültiges JSON → keine Zwischenstopps */ }
 
     if (!eventName || !eventLocation || !exactStartLocation || !departureDatetime) {
-      return fail(400, { error: 'Alle Pflichtfelder muessen ausgefuellt sein.' });
+      return fail(400, { error: 'Alle Pflichtfelder müssen ausgefüllt sein.' });
     }
 
     const departureTime = new Date(departureDatetime);
     if (isNaN(departureTime.getTime())) {
-      return fail(400, { error: 'Ungueltige Zeitangabe.' });
+      return fail(400, { error: 'Ungültige Zeitangabe.' });
     }
     if (departureTime.getTime() - Date.now() < 60 * 60 * 1000) {
       return fail(400, { error: 'Die Abfahrtszeit muss mindestens 1 Stunde in der Zukunft liegen.' });
     }
     if (seatsRaw < 1 || seatsRaw > 8) {
-      return fail(400, { error: 'Bitte 1 bis 8 Sitzplaetze angeben.' });
+      return fail(400, { error: 'Bitte 1 bis 8 Sitzplätze angeben.' });
     }
     if (priceRaw < 1 || priceRaw > 200) {
       return fail(400, { error: 'Der Preis muss zwischen CHF 1 und CHF 200 liegen.' });
     }
 
-    // Koordinaten beider Orte ermitteln
     const [startResult, eventResult] = await Promise.all([
       geocode(exactStartLocation),
       geocode(eventLocation)
     ]);
 
-    // startLocation = oeffentliche grobe Stadt; startLocationExact = privat
+    // Öffentliche Stadt-Bezeichnung; genaue Adresse bleibt privat
     const roughStartLocation = startResult?.roughCity ?? exactStartLocation.split(',')[0].trim();
 
-    // startCoordsRough = Stadtebene-Koordinaten (oeffentlich fuer Vorschau)
-    // Wir geocodieren die grobe Stadt separat, damit die Koordinaten wirklich stadtgenau sind.
+    // Stadtkoordinaten separat geocodieren für präzise Haversine-Vorschau
     const roughCityResult = roughStartLocation !== exactStartLocation
       ? await geocode(roughStartLocation)
       : startResult;
 
-    // Route inkl. Zwischenstopps berechnen (für estimatedArrivalTime)
+    // Route inkl. Zwischenstopps für estimatedArrivalTime
     let durationInSeconds = 75 * 60;
     if (startResult && eventResult) {
       const routeWaypoints = [
@@ -98,7 +95,6 @@ export const actions: Actions = {
       eventName,
       eventCategory,
       eventLocation,
-      // Koordinaten: eventLocationCoords oeffentlich, startCoords privat
       eventLocationCoords: eventResult ? { lat: eventResult.lat, lon: eventResult.lon } : null,
       startLocation: roughStartLocation,
       startLocationExact: exactStartLocation,
@@ -109,7 +105,6 @@ export const actions: Actions = {
       seats: seatsRaw,
       seatsAvailable: seatsRaw,
       pricePerPerson: priceRaw,
-      // Zwischenstopps werden gespeichert (für Routenanzeige auf Detailseite)
       waypoints: waypointsList.map(w => ({
         label: w.label,
         lat: String(w.lat),

@@ -143,7 +143,7 @@ export const actions: Actions = {
       _id: booking.rideId,
       driverId: new ObjectId(locals.user.id)
     });
-    if (!ride) return fail(403, { error: 'Keine Berechtigung fuer diese Aktion.' });
+    if (!ride) return fail(403, { error: 'Keine Berechtigung für diese Aktion.' });
 
     await Promise.all([
       db.collection('bookings').updateOne(
@@ -160,7 +160,7 @@ export const actions: Actions = {
   },
 
   // ── Ganze Fahrt stornieren ────────────────────────────────────
-  // Alle Mitfahrer werden benachrichtigt, keine Stornogebuehr fuer Mitfahrer
+  // Alle Mitfahrer werden benachrichtigt, keine Stornogebühr für Mitfahrer
   cancelRide: async ({ request, locals }) => {
     if (!locals.user) throw redirect(302, '/auth/login');
 
@@ -180,7 +180,7 @@ export const actions: Actions = {
     });
     if (!ride) return fail(404, { error: 'Fahrt nicht gefunden oder bereits storniert.' });
 
-    // Alle aktiven Buchungen dieser Fahrt laden (fuer Benachrichtigungen)
+    // Alle aktiven Buchungen dieser Fahrt laden (für Benachrichtigungen)
     const activeBookings = await db.collection('bookings').find({
       rideId,
       status: { $in: ['pending', 'accepted', 'confirmed'] }
@@ -192,7 +192,7 @@ export const actions: Actions = {
       { $set: { status: 'cancelled', cancelledAt: new Date() } }
     );
 
-    // Alle Buchungen auf cancelled_by_driver setzen (kein Seat-Release noetig, Fahrt ist weg)
+    // Alle Buchungen auf cancelled_by_driver setzen (kein Seat-Release nötig, Fahrt ist weg)
     if (activeBookings.length > 0) {
       await db.collection('bookings').updateMany(
         { rideId, status: { $in: ['pending', 'accepted', 'confirmed'] } },

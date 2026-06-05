@@ -12,7 +12,7 @@
     return page.url.pathname.startsWith(href);
   }
 
-  // Kombinierter Badge fuer Inbox: offene Anfragen + ungelesene Notifs + ungelesene Nachrichten
+  // Badge-Count: offene Anfragen + ungelesene Notifications + ungelesene Nachrichten
   const inboxBadge = $derived(Math.min(pendingRequests + unreadCount + unreadMessages, 99));
   const notifBadge = $derived(Math.min(unreadCount, 9));
 </script>

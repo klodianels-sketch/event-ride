@@ -14,7 +14,7 @@ export async function acceptBooking(
   if (!booking) return { success: false, error: 'Anfrage nicht gefunden oder bereits verarbeitet.' };
 
   const ride = await db.collection('rides').findOne({ _id: booking.rideId, driverId });
-  if (!ride) return { success: false, error: 'Keine Berechtigung fuer diese Aktion.' };
+  if (!ride) return { success: false, error: 'Keine Berechtigung für diese Aktion.' };
 
   const seatUpdate = await db.collection('rides').updateOne(
     { _id: ride._id, seatsAvailable: { $gt: 0 } },
@@ -23,9 +23,9 @@ export async function acceptBooking(
   if (seatUpdate.modifiedCount === 0) {
     await db.collection('bookings').updateOne(
       { _id: bookingId },
-      { $set: { status: 'rejected', cancellationReason: 'Keine freien Plaetze', cancelledAt: new Date() } }
+      { $set: { status: 'rejected', cancellationReason: 'Keine freien Plätze', cancelledAt: new Date() } }
     );
-    return { success: false, error: 'Keine freien Plaetze mehr. Anfrage automatisch abgelehnt.' };
+    return { success: false, error: 'Keine freien Plätze mehr. Anfrage automatisch abgelehnt.' };
   }
 
   const existingAccepted = await db.collection('bookings').find({
@@ -105,7 +105,7 @@ export async function acceptBooking(
     userId: booking.passengerId as ObjectId,
     type: 'booking_accepted',
     title: 'Anfrage angenommen!',
-    message: `Deine Anfrage fuer "${ride.eventName as string}" wurde bestaetigt.${thisStop ? ` Abholung ca. ${thisStop.estimatedPickupTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })} Uhr.` : ''}`,
+    message: `Deine Anfrage für „${ride.eventName as string}" wurde bestätigt.${thisStop ? ` Abholung ca. ${thisStop.estimatedPickupTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })} Uhr.` : ''}`,
     rideId: ride._id as ObjectId,
     bookingId
   }).catch(err => console.error('[acceptBooking] Notification fehlgeschlagen:', err));
@@ -118,7 +118,7 @@ export async function acceptBooking(
           userId: existingAccepted.find(b => b._id.toString() === stop.bookingId)?.passengerId as ObjectId,
           type: 'times_updated' as const,
           title: 'Abholzeiten aktualisiert',
-          message: `Neuer Mitfahrer bestaetigt — deine Abholzeit fuer "${ride.eventName as string}" hat sich leicht angepasst.`,
+          message: `Neuer Mitfahrer bestätigt — deine Abholzeit für „${ride.eventName as string}" hat sich leicht angepasst.`,
           rideId: ride._id as ObjectId,
           bookingId: new ObjectId(stop.bookingId)
         }))
@@ -138,7 +138,7 @@ export async function rejectBooking(
   if (!booking) return { success: false, error: 'Anfrage nicht gefunden.' };
 
   const ride = await db.collection('rides').findOne({ _id: booking.rideId, driverId });
-  if (!ride) return { success: false, error: 'Keine Berechtigung fuer diese Aktion.' };
+  if (!ride) return { success: false, error: 'Keine Berechtigung für diese Aktion.' };
 
   await db.collection('bookings').updateOne(
     { _id: bookingId },
@@ -149,7 +149,7 @@ export async function rejectBooking(
     userId: booking.passengerId as ObjectId,
     type: 'booking_rejected',
     title: 'Anfrage abgelehnt',
-    message: `Deine Anfrage fuer "${ride.eventName as string}" wurde leider nicht angenommen. Schau nach anderen Fahrten!`,
+    message: `Deine Anfrage für „${ride.eventName as string}" wurde leider nicht angenommen. Schau nach anderen Fahrten!`,
     rideId: ride._id as ObjectId,
     bookingId
   }).catch(err => console.error('[rejectBooking] Notification fehlgeschlagen:', err));

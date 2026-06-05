@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   const bookingIdStr = url.searchParams.get('bookingId');
   let bookingId: ObjectId;
   try { bookingId = new ObjectId(bookingIdStr ?? ''); }
-  catch { throw error(400, 'Ungueltige Buchungs-ID'); }
+  catch { throw error(400, 'Ungültige Buchungs-ID'); }
 
   const [ride, booking] = await Promise.all([
     db.collection('rides').findOne({ _id: rideId }),
@@ -24,12 +24,12 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
   if (!ride || !booking) throw error(404, 'Fahrt oder Buchung nicht gefunden');
 
-  // Nur Fahrten in der Vergangenheit koennen bewertet werden
+  // Nur Fahrten in der Vergangenheit können bewertet werden
   if ((ride.departureTime as Date) > new Date()) {
-    throw error(400, 'Bewertung ist erst nach der Fahrt moeglich');
+    throw error(400, 'Bewertung ist erst nach der Fahrt möglich');
   }
 
-  // Nur beteiligte Nutzer duerfen bewerten
+  // Nur beteiligte Nutzer dürfen bewerten
   const userId = new ObjectId(locals.user.id);
   const isDriver = ride.driverId.equals(userId);
   const isPassenger = (booking.passengerId as ObjectId).equals(userId);
@@ -39,7 +39,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   // Buchung muss accepted/confirmed/completed/no-show sein
   const allowedStatuses = ['accepted', 'confirmed', 'completed', 'no-show'];
   if (!allowedStatuses.includes(booking.status as string)) {
-    throw error(400, 'Bewertung nur fuer angenommene oder abgeschlossene Fahrten moeglich');
+    throw error(400, 'Bewertung nur für angenommene oder abgeschlossene Fahrten möglich');
   }
 
   // Wer wird bewertet?
@@ -73,7 +73,7 @@ export const actions: Actions = {
     const comment = (formData.get('comment') as string ?? '').trim().slice(0, 300);
     const bookingIdStr = (formData.get('bookingId') as string ?? '').trim();
 
-    if (starsRaw < 1 || starsRaw > 5) return fail(400, { error: 'Bitte 1 bis 5 Sterne waehlen.' });
+    if (starsRaw < 1 || starsRaw > 5) return fail(400, { error: 'Bitte 1 bis 5 Sterne wählen.' });
 
     const db = await getDb();
     const userId = new ObjectId(locals.user.id);
@@ -83,7 +83,7 @@ export const actions: Actions = {
       rideId = new ObjectId(params.id);
       bookingId = new ObjectId(bookingIdStr);
     } catch {
-      return fail(400, { error: 'Ungueltige IDs.' });
+      return fail(400, { error: 'Ungültige IDs.' });
     }
 
     const [ride, booking] = await Promise.all([
@@ -99,11 +99,11 @@ export const actions: Actions = {
 
     const toUserId = isPassenger ? ride.driverId : booking.passengerId;
 
-    // Doppel-Rating verhindern (unique constraint in Logik, kein DB-Index noetig fuer MVP)
+    // Doppel-Rating verhindern (unique constraint in Logik, kein DB-Index nötig)
     const existing = await db.collection('ratings').findOne({ rideId, fromUserId: userId, toUserId });
-    if (existing) return fail(400, { error: 'Du hast diese Person fuer diese Fahrt bereits bewertet.' });
+    if (existing) return fail(400, { error: 'Du hast diese Person für diese Fahrt bereits bewertet.' });
 
-    // Rating einfuegen
+    // Rating einfügen
     await db.collection('ratings').insertOne({
       rideId,
       bookingId,
@@ -115,7 +115,7 @@ export const actions: Actions = {
       createdAt: new Date()
     });
 
-    // Durchschnittsbewertung des Empfaengers aktualisieren
+    // Durchschnittsbewertung des Empfängers aktualisieren
     const allRatings = await db.collection('ratings').find({ toUserId }).toArray();
     const avg = allRatings.reduce((sum, r) => sum + (r.stars as number), 0) / allRatings.length;
     await db.collection('users').updateOne(

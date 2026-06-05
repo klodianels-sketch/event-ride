@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms';
   import BookingCard from '$lib/components/BookingCard.svelte';
   import { browser } from '$app/environment';
-  // Stornogebuehr-Konstante muss mit CANCELLATION_POLICY.passengerLate.value uebereinstimmen
+  // Stornogebühr-Konstante muss mit CANCELLATION_POLICY.passengerLate.value übereinstimmen
   const LATE_CANCEL_FEE_PERCENT = 20;
   const FREE_WINDOW_HOURS = 24;
 

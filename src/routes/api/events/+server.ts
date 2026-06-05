@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import { getDb } from '$lib/db';
 
-// Gibt Event-Namen-Vorschlaege zurueck (fuer Autosuggest beim Erstellen einer Fahrt)
+// Event-Namen-Vorschläge für das Autosuggest beim Erstellen einer Fahrt
 // Sucht in der rides-Collection nach passenden Event-Namen (case-insensitive)
 export const GET: RequestHandler = async ({ url }) => {
   const q = (url.searchParams.get('q') ?? '').trim();

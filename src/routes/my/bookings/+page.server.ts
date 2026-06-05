@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
   // ── Offene Anfrage stornieren (pending) ───────────────────────
-  // Immer kostenlos, kein Sitz-Abzug rueckgaengig machen (war noch nicht reserviert)
+  // Immer kostenlos, kein Sitz-Abzug rückgängig machen (war noch nicht reserviert)
   cancelPending: async ({ request, locals }) => {
     if (!locals.user) throw redirect(302, '/auth/login');
 
@@ -42,7 +42,7 @@ export const actions: Actions = {
 
     let bookingId: ObjectId;
     try { bookingId = new ObjectId(bookingIdStr); }
-    catch { return fail(400, { error: 'Ungueltige Buchungs-ID.' }); }
+    catch { return fail(400, { error: 'Ungültige Buchungs-ID.' }); }
 
     const db = await getDb();
     const passengerId = new ObjectId(locals.user.id);
@@ -74,7 +74,7 @@ export const actions: Actions = {
         userId: ride.driverId as ObjectId,
         type: 'booking_cancelled_passenger',
         title: 'Anfrage storniert',
-        message: `${locals.user.firstName} ${locals.user.lastName} hat die Anfrage fuer "${ride.eventName as string}" zurueckgezogen.`,
+        message: `${locals.user.firstName} ${locals.user.lastName} hat die Anfrage für „${ride.eventName as string}" zurückgezogen.`,
         rideId: ride._id as ObjectId,
         bookingId
       }).catch(err => console.error('[cancelPending] Notification fehlgeschlagen:', err));
@@ -83,8 +83,8 @@ export const actions: Actions = {
     return { cancelSuccess: true };
   },
 
-  // ── Bestaetigte Mitfahrt stornieren (accepted) ────────────────
-  // Stornogebuehr moeglich bei Storno < 24h vor Abfahrt
+  // ── Bestätigte Mitfahrt stornieren (accepted) ────────────────
+  // Stornogebühr möglich bei Storno < 24h vor Abfahrt
   cancelAccepted: async ({ request, locals }) => {
     if (!locals.user) throw redirect(302, '/auth/login');
 
@@ -93,7 +93,7 @@ export const actions: Actions = {
 
     let bookingId: ObjectId;
     try { bookingId = new ObjectId(bookingIdStr); }
-    catch { return fail(400, { error: 'Ungueltige Buchungs-ID.' }); }
+    catch { return fail(400, { error: 'Ungültige Buchungs-ID.' }); }
 
     const db = await getDb();
     const passengerId = new ObjectId(locals.user.id);
@@ -127,7 +127,7 @@ export const actions: Actions = {
             cancellationFee: fee,
             cancellationReason: isFree
               ? 'Mitfahrer hat rechtzeitig storniert'
-              : 'Mitfahrer hat spaet storniert',
+              : 'Mitfahrer hat spät storniert',
             cancelledAt: new Date(),
             paymentStatus: isFree ? 'refunded' : 'forfeited'
           }
@@ -140,12 +140,12 @@ export const actions: Actions = {
       userId: ride.driverId as ObjectId,
       type: 'booking_cancelled_passenger',
       title: 'Mitfahrt storniert',
-      message: `${locals.user.firstName} ${locals.user.lastName} hat die Mitfahrt fuer "${ride.eventName as string}" storniert.${fee > 0 ? ` Stornogebuehr: CHF ${fee.toFixed(2)}.` : ''}`,
+      message: `${locals.user.firstName} ${locals.user.lastName} hat die Mitfahrt für „${ride.eventName as string}" storniert.${fee > 0 ? ` Stornogebühr: CHF ${fee.toFixed(2)}.` : ''}`,
       rideId: ride._id as ObjectId,
       bookingId
     }).catch(err => console.error('[cancelAccepted] Notification fehlgeschlagen:', err));
 
-    // Route fuer verbleibende Mitfahrer neu berechnen (fire-and-forget)
+    // Route für verbleibende Mitfahrer neu berechnen (fire-and-forget)
     recalcRouteAfterCancel(db, ride._id as ObjectId, bookingId).catch(
       err => console.error('[cancelAccepted] Route-Neuberechnung fehlgeschlagen:', err)
     );

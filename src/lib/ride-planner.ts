@@ -27,7 +27,7 @@ export interface PlanResult {
   timeAccuracy: TimeAccuracy;
 }
 
-// Projiziert Punkt P auf Linie A→B, gibt Skalar zurueck (0=A, 1=B)
+// Projiziert Punkt P auf Linie A→B, gibt Skalar zurück (0=A, 1=B)
 function projectScalar(
   ax: number, ay: number,
   bx: number, by: number,
@@ -59,7 +59,7 @@ export function sortStopsByProjection(
 
 // Berechnet die vollstaendige Route mit allen Stopps.
 // allStops enthaelt ALLE Passagiere (bestehende + neuer).
-// Gibt sortierte, zeitberechnete Stopps zurueck.
+// Gibt sortierte, zeitberechnete Stopps zurück.
 export async function planRoute(
   startCoords: { lat: string; lon: string },
   eventCoords: { lat: string; lon: string },

@@ -8,14 +8,14 @@ export const load: LayoutServerLoad = async ({ locals }) => {
   const db = await getDb();
   const userId = new ObjectId(locals.user.id);
 
-  // Konversations-IDs fuer unread-message-Count
+  // Konversations-IDs für unread-message-Count
   const convIds = await db
     .collection('conversations')
     .find({ participantIds: userId })
     .map(c => c._id)
     .toArray();
 
-  // Eigene Fahrt-IDs fuer pending-request-Count
+  // Eigene Fahrt-IDs für pending-request-Count
   const myRideIds = await db
     .collection('rides')
     .find({ driverId: userId, status: 'active' })

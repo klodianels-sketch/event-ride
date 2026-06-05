@@ -20,7 +20,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   }
 
   const ride = await db.collection('rides').findOne({ _id: rideId, status: 'active' });
-  if (!ride) throw error(404, 'Fahrt nicht gefunden oder nicht mehr verfuegbar');
+  if (!ride) throw error(404, 'Fahrt nicht gefunden oder nicht mehr verfügbar');
 
   if (!ride.startCoords || !ride.eventLocationCoords) {
     const repaired = await ensureRideCoords(ride, db);
@@ -50,7 +50,7 @@ export const actions: Actions = {
     const agreeTerms = formData.get('agreeTerms');
 
     if (!pickupLocation) return fail(400, { error: 'Bitte gib deinen Abholort an.' });
-    if (!agreeTerms) return fail(400, { error: 'Bitte die Fairplay-Regel bestaetigen.' });
+    if (!agreeTerms) return fail(400, { error: 'Bitte die Fairplay-Regel bestätigen.' });
 
     const db = await getDb();
 
@@ -58,7 +58,7 @@ export const actions: Actions = {
     try {
       rideId = new ObjectId(params.id);
     } catch {
-      return fail(400, { error: 'Ungueltige Fahrt-ID.' });
+      return fail(400, { error: 'Ungültige Fahrt-ID.' });
     }
 
     const ride = await db.collection('rides').findOne({ _id: rideId, status: 'active' });
@@ -66,10 +66,10 @@ export const actions: Actions = {
 
     const departureTime = ride.departureTime as Date;
     if (Date.now() + 30 * 60 * 1000 > departureTime.getTime()) {
-      return fail(400, { error: 'Diese Fahrt startet in weniger als 30 Minuten. Anfragen sind nicht mehr moeglich.' });
+      return fail(400, { error: 'Diese Fahrt startet in weniger als 30 Minuten. Anfragen sind nicht mehr möglich.' });
     }
     if ((ride.seatsAvailable as number) <= 0) {
-      return fail(400, { error: 'Keine freien Plaetze mehr verfuegbar.' });
+      return fail(400, { error: 'Keine freien Plätze mehr verfügbar.' });
     }
     if (ride.driverId.toString() === locals.user.id) {
       return fail(400, { error: 'Du kannst nicht an deiner eigenen Fahrt teilnehmen.' });
@@ -84,14 +84,14 @@ export const actions: Actions = {
       status: { $nin: ['cancelled', 'rejected'] }
     });
     if (existingBooking) {
-      return fail(400, { error: 'Du hast fuer diese Fahrt bereits eine Anfrage gestellt.' });
+      return fail(400, { error: 'Du hast für diese Fahrt bereits eine Anfrage gestellt.' });
     }
 
-    // Abholort geocodieren — validiert die Adresse und speichert Koordinaten fuer spaetere Routenberechnung
+    // Abholort geocodieren und Koordinaten für spätere Routenberechnung speichern
     const pickupResult = await geocode(pickupLocation);
     if (!pickupResult) {
       return fail(400, {
-        error: 'Dein Abholort konnte nicht gefunden werden. Bitte die Schreibweise pruefen.'
+        error: 'Dein Abholort konnte nicht gefunden werden. Bitte die Schreibweise prüfen.'
       });
     }
 

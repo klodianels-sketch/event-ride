@@ -1,5 +1,5 @@
 /**
- * EventRide Seed-Script — Phase 6
+ * EventRide Seed-Script
  * Realistische Schweizer Testdaten: 10 User, 22 Rides, Bookings, Chats, Ratings, Notifications
  * Idempotent: loescht _seeded:true Dokumente und fuegt neu ein.
  *
@@ -77,7 +77,7 @@ async function seed() {
   await client.connect();
   const db = client.db('event-ride');
 
-  console.log('\n🌱  EventRide Seeding startet (Phase 6)...\n');
+  console.log('\n🌱  EventRide Seeding startet...\n');
 
   // Alte Seed-Daten löschen
   const [rDel, bDel, ratDel, nDel, cDel, mDel] = await Promise.all([
@@ -844,7 +844,7 @@ async function seed() {
   console.log(`✅  ${notifications.length} Notifications eingefügt`);
 
   // ── Zusammenfassung ───────────────────────────────────────────────────────
-  console.log('\n🎉  Seeding Phase 6 abgeschlossen!\n');
+  console.log('\n🎉  Seeding abgeschlossen!\n');
   console.log('📋  Zugangsdaten (alle Passwörter: Test1234!):\n');
   console.log(`    Admin:      ${ADMIN_EMAIL}  /  ${ADMIN_PASSWORD}`);
   for (const u of usersData) {

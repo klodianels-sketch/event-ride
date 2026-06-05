@@ -151,7 +151,7 @@
     pickupCoords !== null && filteredRides.some((r: PublicRideDTO) => !r.startCoordsRough || !r.eventLocationCoords)
   );
 
-  // Aktive Kategorie Label fuer den Listentitel
+  // Aktive Kategorie für den Listentitel
   const activeCatLabel = $derived(
     CHIPS.find(c => c.key === activeCategory)?.label ?? 'Fahrten'
   );

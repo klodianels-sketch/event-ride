@@ -62,13 +62,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const pendingCount = pendingBookings.length;
 
   // Privacy-sichere Teilnehmerliste:
-  // Sichtbar fuer: Fahrer (alle), bestaetigte Mitfahrer (nur confirmed), Anfragende (nur Count)
+  // Sichtbar für: Fahrer (alle), bestätigte Mitfahrer, Anfragende (nur Count)
   // Format: Vorname + Nachname-Initial (z.B. "Stefan M.")
   const myBookingIsAccepted = myBooking?.status === 'accepted' || myBooking?.status === 'confirmed';
   let confirmedPassengers: Array<{ displayName: string }> = [];
 
   if (isDriver || myBookingIsAccepted) {
-    // Passagier-User-Daten laden (nur Vorname + Nachname fuer Display)
+    // Passagier-Daten laden (Vorname + Nachname)
     const passengerIds = acceptedBookings.map(b => b.passengerId as ObjectId);
     if (passengerIds.length > 0) {
       const passengerUsers = await db.collection('users')

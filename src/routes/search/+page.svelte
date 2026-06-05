@@ -67,7 +67,7 @@
           name="q"
           type="text"
           bind:value={searchInput}
-          placeholder="Event, Ort oder Kuenstler..."
+          placeholder="Event, Ort oder Künstler..."
           autocomplete="off"
           class="w-full pl-9 pr-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
         />
