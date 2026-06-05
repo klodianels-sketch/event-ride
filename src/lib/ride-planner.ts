@@ -3,8 +3,8 @@ import type { TimeAccuracy } from '$lib/routing';
 
 // 2 Minuten Einsteige-Zeit pro Stopp
 const STOP_DWELL_SECONDS = 120;
-// Empfehlung: 8 Minuten vor geschaetzter Abholung bereit sein
-const RECOMMENDED_BUFFER_MINUTES = 8;
+// Mitfahrer soll 5 Minuten vor der geschaetzten Abholzeit bereit sein
+const RECOMMENDED_BUFFER_MINUTES = 5;
 
 export interface StopInput {
   bookingId: string;

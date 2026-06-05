@@ -3,15 +3,40 @@ import type { TimeAccuracy } from '$lib/routing';
 
 export type { TimeAccuracy };
 
+export type EventCategory =
+  | 'music'
+  | 'festival'
+  | 'nightlife'
+  | 'sport'
+  | 'hiking'
+  | 'culture'
+  | 'other';
+
 export interface Coords {
   lat: string;
   lon: string;
 }
 
 export interface NoShowPolicy {
-  waitMinutes: number;    // wie lange Fahrer nach estimatedPickupTime wartet
-  penaltyPercent: number; // 0-100: wieviel % des Preises einbehalten werden
+  waitMinutes: number;
+  penaltyPercent: number;
 }
+
+export type UserRole = 'user' | 'admin';
+
+export interface NotificationSettings {
+  newBookingRequest: boolean;
+  bookingStatusChange: boolean;
+  newMessage: boolean;
+  rideUpdates: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  newBookingRequest: true,
+  bookingStatusChange: true,
+  newMessage: true,
+  rideUpdates: true
+};
 
 export interface User {
   _id: ObjectId;
@@ -19,10 +44,22 @@ export interface User {
   lastName: string;
   email: string;
   passwordHash: string;
+  role: UserRole;
+  avatarUrl?: string;
+  bio?: string;
+  region?: string;
+  phone?: string;
+  interests: string[];
+  notificationSettings: NotificationSettings;
   profilePicture?: string;
   rating: number;
   totalRatings: number;
+  isDisabled: boolean;
+  disabledAt?: Date;
+  disabledBy?: ObjectId;
+  disabledReason?: string;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface Session {
@@ -38,24 +75,30 @@ export interface Ride {
   driverId: ObjectId;
   driverName: string;
   driverPhoto?: string;
+  driverRating?: number;
   eventName: string;
-  eventLocation: string;         // oeffentlich
+  eventCategory?: EventCategory;
+  eventLocation: string;
   eventImage?: string;
-  eventLocationCoords?: Coords;  // oeffentlich (Event-Ort ist bekannt)
-  startLocation: string;         // oeffentlich: grobe Stadt
-  startLocationExact?: string;   // PRIVAT: exakte Adresse, nie an Client
-  startCoords?: Coords;          // PRIVAT: exakte Koordinaten, nie an Client
-  startCoordsRough?: Coords;     // semi-oeffentlich: Stadtebene fuer Vorschau-Berechnung
+  eventLocationCoords?: Coords;
+  startLocation: string;
+  startLocationExact?: string;   // PRIVAT — nie an Client senden
+  startCoords?: Coords;          // PRIVAT — nie an Client senden
+  startCoordsRough?: Coords;
   departureTime: Date;
-  estimatedArrivalTime: Date;    // Direkte Route; wird nach jeder Buchung neu berechnet
+  estimatedArrivalTime: Date;
   seats: number;
   seatsAvailable: number;
   pricePerPerson: number;
   fairplayWindowMinutes: number;
   noShowPolicy: NoShowPolicy;
-  routeVersion: number;          // wird bei jeder Route-Aenderung erhoeht
+  routeVersion: number;
   status: 'active' | 'cancelled' | 'completed';
+  moderationReason?: string;
+  moderatedAt?: Date;
+  moderatedBy?: ObjectId;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface Booking {
@@ -65,29 +108,86 @@ export interface Booking {
   passengerName: string;
   pickupLocation: string;
   pickupCoords?: Coords;
-  estimatedPickupTime: Date;
-  recommendedReadyTime: Date;    // estimatedPickupTime - 8 Min (rechtzeitig bereit sein)
-  latestReadyTime: Date;         // estimatedPickupTime + fairplayWindowMinutes (Fahrer faehrt spaetestens dann)
-  estimatedArrivalAtEvent: Date;
+  estimatedPickupTime?: Date;
+  recommendedReadyTime?: Date;
+  latestReadyTime?: Date;
+  estimatedArrivalAtEvent?: Date;
   bookedPrice: number;
-  routeVersion: number;          // Route-Version zum Buchungszeitpunkt
-  timeAccuracy: TimeAccuracy;
-  noShowPolicySnapshot: NoShowPolicy; // Regel zum Buchungszeitpunkt eingefroren
-  status: 'pending' | 'confirmed' | 'cancelled' | 'no-show' | 'completed';
+  routeVersion?: number;
+  timeAccuracy?: TimeAccuracy;
+  noShowPolicySnapshot: NoShowPolicy;
+  conversationId?: ObjectId;
+  status:
+    | 'pending'
+    | 'accepted'
+    | 'confirmed'
+    | 'rejected'
+    | 'cancelled'
+    | 'cancelled_by_passenger'
+    | 'cancelled_by_driver'
+    | 'no-show'
+    | 'completed';
   cancellationReason?: string;
+  cancellationFee?: number;
   cancelledAt?: Date;
   paymentStatus: 'pending' | 'paid' | 'refunded' | 'forfeited';
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export type NotificationType =
+  | 'booking_received'
+  | 'booking_accepted'
+  | 'booking_rejected'
+  | 'booking_cancelled_passenger'
+  | 'ride_cancelled'
+  | 'times_updated'
+  | 'rating_pending'
+  | 'new_message';
+
+export interface Notification {
+  _id: ObjectId;
+  userId: ObjectId;
+  type: NotificationType;
+  title: string;
+  message: string;
+  rideId?: ObjectId;
+  bookingId?: ObjectId;
+  conversationId?: ObjectId;
+  isRead: boolean;
   createdAt: Date;
 }
 
 export interface Rating {
   _id: ObjectId;
   rideId: ObjectId;
+  bookingId: ObjectId;
   fromUserId: ObjectId;
   toUserId: ObjectId;
-  role: 'driver' | 'passenger';
+  fromRole: 'driver' | 'passenger';
   stars: number;
   comment?: string;
+  createdAt: Date;
+}
+
+export interface Conversation {
+  _id: ObjectId;
+  rideId?: ObjectId;
+  bookingId?: ObjectId;
+  participantIds: ObjectId[];
+  lastMessageAt?: Date;
+  lastMessageText?: string;
+  lastMessageSenderId?: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Message {
+  _id: ObjectId;
+  conversationId: ObjectId;
+  senderId: ObjectId;
+  text: string;
+  readBy: ObjectId[];
   createdAt: Date;
 }
 
@@ -96,5 +196,7 @@ export interface SessionUser {
   firstName: string;
   lastName: string;
   email: string;
+  avatarUrl?: string;
   profilePicture?: string;
+  role: UserRole;
 }

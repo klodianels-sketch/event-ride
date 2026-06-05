@@ -1,13 +1,17 @@
 import type { WithId, Document } from 'mongodb';
 import type { TimeAccuracy } from '$lib/routing';
+import type { EventCategory } from '$lib/types';
 
 // Oeffentliches Ride-DTO — sicher an jeden Client sendbar.
 // NIEMALS startLocationExact, startCoords (exact) oder interne IDs hineingeben.
 export interface PublicRideDTO {
   _id: string;
+  driverId: string;
   driverName: string;
   driverPhoto?: string;
+  driverRating?: number;
   eventName: string;
+  eventCategory?: EventCategory;
   eventLocation: string;
   eventImage?: string;
   // Stadtebene-Koordinaten des Fahrer-Startorts — fuer Haversine-Vorschau im Browser OK
@@ -30,21 +34,25 @@ export interface PublicRideDTO {
 export interface PublicBookingDTO {
   _id: string;
   pickupLocation: string;
-  estimatedPickupTime: string;
-  recommendedReadyTime: string;
-  latestReadyTime: string;
+  // Zeiten sind nur gesetzt nach driver-accept (status === 'accepted')
+  estimatedPickupTime?: string;
+  recommendedReadyTime?: string;
+  latestReadyTime?: string;
   estimatedArrivalAtEvent?: string;
   bookedPrice?: number;
+  cancellationFee?: number;
   timeAccuracy?: TimeAccuracy;
   routeVersion?: number;
   status: string;
   paymentStatus: string;
   noShowPolicySnapshot?: { waitMinutes: number; penaltyPercent: number };
   ride?: {
+    _id?: string;
     eventName: string;
     eventLocation: string;
     departureTime: string;
     driverName: string;
+    driverId?: string;
     pricePerPerson: number;
     startLocation: string;
   };
@@ -72,9 +80,12 @@ export function toPublicRideDTO(r: WithId<Document>): PublicRideDTO {
   };
   return {
     _id: r._id.toString(),
+    driverId: r.driverId?.toString() ?? '',
     driverName: r.driverName as string,
     driverPhoto: r.driverPhoto as string | undefined,
+    driverRating: r.driverRating as number | undefined,
     eventName: r.eventName as string,
+    eventCategory: (r.eventCategory as EventCategory | undefined) ?? 'other',
     eventLocation: r.eventLocation as string,
     eventImage: r.eventImage as string | undefined,
     startLocation: r.startLocation as string,
@@ -103,11 +114,13 @@ export function toPublicBookingDTO(
   return {
     _id: b._id.toString(),
     pickupLocation: b.pickupLocation as string,
-    estimatedPickupTime: toISO(b.estimatedPickupTime),
-    recommendedReadyTime: toISO(b.recommendedReadyTime ?? b.mustArriveBy),
-    latestReadyTime: toISO(b.latestReadyTime ?? b.latestArrivalTime),
+    // Zeiten nur senden wenn vorhanden (nach driver-accept)
+    estimatedPickupTime: b.estimatedPickupTime ? toISO(b.estimatedPickupTime) : undefined,
+    recommendedReadyTime: b.recommendedReadyTime ? toISO(b.recommendedReadyTime) : undefined,
+    latestReadyTime: b.latestReadyTime ? toISO(b.latestReadyTime) : undefined,
     estimatedArrivalAtEvent: b.estimatedArrivalAtEvent ? toISO(b.estimatedArrivalAtEvent) : undefined,
     bookedPrice: b.bookedPrice as number | undefined,
+    cancellationFee: b.cancellationFee as number | undefined,
     timeAccuracy: b.timeAccuracy as TimeAccuracy | undefined,
     routeVersion: b.routeVersion as number | undefined,
     status: b.status as string,
@@ -115,10 +128,12 @@ export function toPublicBookingDTO(
     noShowPolicySnapshot: noShowSnapshot,
     ride: ride
       ? {
+          _id: ride._id.toString(),
           eventName: ride.eventName as string,
           eventLocation: ride.eventLocation as string,
           departureTime: toISO(ride.departureTime),
           driverName: ride.driverName as string,
+          driverId: ride.driverId?.toString(),
           pricePerPerson: ride.pricePerPerson as number,
           startLocation: ride.startLocation as string
         }

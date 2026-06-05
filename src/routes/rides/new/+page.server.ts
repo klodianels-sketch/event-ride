@@ -5,7 +5,8 @@ import { ObjectId } from 'mongodb';
 import { geocode } from '$lib/geocoding';
 import { osrmRoute } from '$lib/routing';
 
-const DEFAULT_NO_SHOW_POLICY = { waitMinutes: 15, penaltyPercent: 100 };
+// 15 Min Wartefenster, 80 % Einbehalt bei No-Show (fair und konfigurierbar)
+const DEFAULT_NO_SHOW_POLICY = { waitMinutes: 15, penaltyPercent: 80 };
 
 export const load: PageServerLoad = ({ locals }) => {
   if (!locals.user) throw redirect(302, '/auth/login');
@@ -16,6 +17,7 @@ export const actions: Actions = {
   default: async ({ request, locals }) => {
     if (!locals.user) throw redirect(302, '/auth/login');
 
+    const VALID_CATEGORIES = ['music', 'festival', 'nightlife', 'sport', 'hiking', 'culture', 'other'];
     const data = await request.formData();
     const eventName = (data.get('eventName') as string ?? '').trim();
     const eventLocation = (data.get('eventLocation') as string ?? '').trim();
@@ -23,6 +25,8 @@ export const actions: Actions = {
     const departureDatetime = data.get('departureTime') as string ?? '';
     const seatsRaw = parseInt(data.get('seats') as string ?? '0');
     const priceRaw = parseFloat(data.get('pricePerPerson') as string ?? '0');
+    const eventCategoryRaw = (data.get('eventCategory') as string ?? 'other').trim();
+    const eventCategory = VALID_CATEGORIES.includes(eventCategoryRaw) ? eventCategoryRaw : 'other';
 
     if (!eventName || !eventLocation || !exactStartLocation || !departureDatetime) {
       return fail(400, { error: 'Alle Pflichtfelder muessen ausgefuellt sein.' });
@@ -72,6 +76,7 @@ export const actions: Actions = {
       driverName: `${locals.user.firstName} ${locals.user.lastName}`,
       driverPhoto: locals.user.profilePicture ?? null,
       eventName,
+      eventCategory,
       eventLocation,
       // Koordinaten: eventLocationCoords oeffentlich, startCoords privat
       eventLocationCoords: eventResult ? { lat: eventResult.lat, lon: eventResult.lon } : null,
@@ -84,7 +89,7 @@ export const actions: Actions = {
       seats: seatsRaw,
       seatsAvailable: seatsRaw,
       pricePerPerson: priceRaw,
-      fairplayWindowMinutes: 10,
+      fairplayWindowMinutes: 15,
       noShowPolicy: DEFAULT_NO_SHOW_POLICY,
       routeVersion: 0,
       status: 'active',
