@@ -87,20 +87,17 @@ In der Sketch-Phase wurden verschiedene Ansätze für die Hauptflows skizziert:
 **Variante A – Liste + Detailansicht (klassisch):**
 Einfacher vertikaler Feed mit Ride Cards; Detailseite mit Buchungs-CTA. Orientiert sich an bekannten App-Mustern (AirBnB, BlaBlaCar).
 
-![Skizze Variante A](docs/sketches/variante-a.jpg)
-*Variante A: Listenbasierter Feed mit Card-Komponenten und Detailseite*
+**Variante B – Detaillierter Flow mit Zwischenstopps und Filteroptionen:**
+Erweiterte Ansicht mit Radius-Filter, verifizierten Mitfahrern, Kalenderfunktion und automatischer Fahrt-Erstellung per Ticket-Scan.
 
-**Variante B – Karten-zentriert:**
-Interaktive Karte als Hauptinterface, Fahrten als Pins. Hohe visuelle Orientierung, aber höhere Komplexität für mobile Nutzung und schlechtere Zugänglichkeit bei vielen Einträgen.
+![Skizzen Seite 1](docs/sketches/skizze-variante-a.png)
+*Erste Ideenskizzen: verschiedene UI-Konzepte für Feed, Kartenansicht, Chat und Fahrt-Erstellung*
 
-![Skizze Variante B](docs/sketches/variante-b.jpg)
-*Variante B: Kartenbasiertes Interface mit Fahrt-Pins*
+![Skizzen Seite 2](docs/sketches/skizze-variante-b.png)
+*Detaillierte Flows: „Neue Fahrt anbieten" und „Mitfahrgelegenheit finden" mit Formularfeldern und Ergebnisliste*
 
 **Variante C – Event-first:**
 Nutzer suchen zuerst das Event, dann passende Fahrten dazu. Stärkt den Eventbezug, erfordert aber eine kuratierte Eventdatenbank.
-
-![Skizze Variante C](docs/sketches/variante-c.jpg)
-*Variante C: Event-Auswahl zuerst, dann passende Mitfahrangebote*
 
 **Entscheid für Weiterentwicklung:** Variante A mit Elementen aus Variante C. Der Feed bleibt listenbasiert für einfache mobile Bedienbarkeit; der Eventkontext wird durch Kategorien und Eventbilder hergestellt. Die Karte erscheint nur wo sie Mehrwert bietet (Fahrt erstellen, Routenvorschau).
 
@@ -128,14 +125,17 @@ Nutzer suchen zuerst das Event, dann passende Fahrten dazu. Stärkt den Eventbez
 
 Die folgenden Screenshots zeigen die wichtigsten Screens des Mockups:
 
-![Mockup Home](docs/mockup/home.png)
-*Home-Screen: Event-Feed mit Kategoriefilter und Abholort-Widget*
+![Mockup Home](docs/mockup/mockup-home.png)
+*Home-Screen: Event-Feed mit Featured-Event-Banner, Kategoriefilter und Mitfahrangeboten*
 
-![Mockup Fahrt erstellen](docs/mockup/ride-create.png)
-*Fahrt erstellen: Formular mit Startort, Ziel und Kartenvorschau*
+![Mockup Event-Detail](docs/mockup/mockup-event-detail.png)
+*Event-Detailseite: Verfügbare Mitfahrangebote zum Openair Frauenfeld 2026 mit Fahrer-Info und Abholzeiten*
 
-![Mockup Buchung](docs/mockup/booking.png)
-*Buchungsflow: Abholort-Eingabe und Fairplay-Bestätigung*
+![Mockup Buchungsflow](docs/mockup/mockup-buchung.png)
+*Buchungsflow: Mitfahrt anfragen (links) und Bestätigungsscreen „Mitfahrt erfolgreich!" (rechts)*
+
+![Mockup Fahrt erstellen](docs/mockup/mockup-fahrt-erstellen.png)
+*Fahrt anbieten: Eingabeformular (links) und Erfolgsscreen „Fahrt erfolgreich veröffentlicht!" (rechts)*
 
 ---
 
@@ -167,16 +167,19 @@ Die Navigation erfolgt über eine fixierte Bottom Navigation Bar mit Badge-Anzei
 Die folgenden Screenshots zeigen die wichtigsten Screens des Prototyps:
 
 ![Screen Home](docs/prototype/screen-home.png)
-*Startseite: Event-Feed mit personalisierten Abholzeiten nach Abholort-Eingabe*
+*Startseite: Event-Feed mit Kategoriefilter und personalisierten Abholzeiten (EventRide v2)*
 
-![Screen Fahrtdetail](docs/prototype/screen-detail.png)
-*Fahrtdetail: Fahrerinformationen, Abholzeiten, Buchungs-CTA und Routenübersicht*
+![Screen Buchung anfragen](docs/prototype/screen-buchung-anfragen.png)
+*Buchungsanfrage: Detailseite mit Zeitvorschau „Spätestens abholbereit" und Abholort-Eingabe*
 
-![Screen Buchung](docs/prototype/screen-booking.png)
-*Buchungsformular: Abholort-Eingabe mit Photon-Autocomplete und Fairplay-Bestätigung*
+![Screen Buchung Erfolg](docs/prototype/screen-buchung-erfolg.png)
+*Buchungsbestätigung: „Anfrage gesendet!" mit Fahrer-Info, Preis und Next-Steps-Hinweisen*
 
-![Screen Inbox](docs/prototype/screen-inbox.png)
-*Inbox: Tabs für Anfragen, Benachrichtigungen und Chats mit Badge-Anzeige*
+![Screen Fahrt erstellen](docs/prototype/screen-fahrt-erstellen.png)
+*Fahrt anbieten: Formular mit Kategorieauswahl, Event-Name, Startort und Leaflet-Kartenvorschau*
+
+![Screen Suche](docs/prototype/screen-suche.png)
+*Suchseite: Kategorieentdeckung und Suchfeld für Events, Orte und Künstler*
 
 **Designentscheidungen:**
 - Mobiloptimierung: max-width 430px, Safe-Area-Padding für iOS/Android
