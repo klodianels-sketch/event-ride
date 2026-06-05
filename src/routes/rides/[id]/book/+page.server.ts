@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb';
 import { geocode } from '$lib/geocoding';
 import { toPublicRideDTO } from '$lib/dto';
 import { ensureRideCoords } from '$lib/ride-repair.server';
+import { createNotification } from '$lib/notifications.server';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
   if (!locals.user) throw redirect(302, `/auth/login?redirect=/rides/${params.id}/book`);
@@ -118,12 +119,14 @@ export const actions: Actions = {
       conversationId = convResult.insertedId;
     }
 
+    const passengerFullName = `${locals.user.firstName} ${locals.user.lastName}`;
+
     // Anfrage erstellen — KEIN Sitz-Abzug, KEINE Routenberechnung
     // Zeiten werden erst bei Annahme durch den Fahrer berechnet
     const inserted = await db.collection('bookings').insertOne({
       rideId,
       passengerId,
-      passengerName: `${locals.user.firstName} ${locals.user.lastName}`,
+      passengerName: passengerFullName,
       pickupLocation,
       pickupCoords: { lat: pickupResult.lat, lon: pickupResult.lon },
       bookedPrice: ride.pricePerPerson as number,
@@ -133,6 +136,17 @@ export const actions: Actions = {
       paymentStatus: 'pending',
       createdAt: new Date()
     });
+
+    // Fahrer sofort benachrichtigen (fire-and-forget)
+    createNotification(db, {
+      userId: driverId,
+      type: 'booking_received',
+      title: `${passengerFullName} möchte mitfahren`,
+      message: `Neue Anfrage für „${ride.eventName as string}". Abholort: ${pickupLocation}`,
+      rideId,
+      bookingId: inserted.insertedId,
+      conversationId
+    }).catch(err => console.error('[book] Fahrer-Notification fehlgeschlagen:', err));
 
     throw redirect(302, `/rides/${params.id}/success?bid=${inserted.insertedId}`);
   }

@@ -155,6 +155,30 @@
   const activeCatLabel = $derived(
     CHIPS.find(c => c.key === activeCategory)?.label ?? 'Fahrten'
   );
+
+  // 20-Minuten-Detour-Filter: Filtert Fahrten mit zu grossem Umweg heraus
+  // Wenn Abholort gesetzt ist und detourMinutes > 20, wird die Fahrt ausgeblendet
+  const MAX_DETOUR_MINUTES = 20;
+  let detourFilterActive = $state(false);
+
+  const ridesWithPreview = $derived(
+    filteredRides.map((ride: PublicRideDTO) => ({
+      ride,
+      preview: calcPreview(ride)
+    }))
+  );
+
+  const displayedRides = $derived(
+    detourFilterActive && pickupCoords
+      ? ridesWithPreview.filter(({ preview }) => !preview || preview.detourMinutes <= MAX_DETOUR_MINUTES)
+      : ridesWithPreview
+  );
+
+  const hiddenByDetourFilter = $derived(
+    detourFilterActive && pickupCoords
+      ? ridesWithPreview.length - displayedRides.length
+      : 0
+  );
 </script>
 
 <svelte:head>
@@ -344,19 +368,57 @@
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-bold text-gray-900">
         {data.search
-          ? `Ergebnisse fuer &quot;${data.search}&quot;`
+          ? `Ergebnisse für „${data.search}"`
           : activeCategory === 'all'
             ? 'Mitfahrgelegenheiten'
             : activeCatLabel}
       </h2>
-      {#if filteredRides.length > 0}
-        <span class="text-sm text-gray-400 font-medium">{filteredRides.length}</span>
-      {/if}
+      <div class="flex items-center gap-2">
+        {#if filteredRides.length > 0}
+          <span class="text-sm text-gray-400 font-medium">{displayedRides.length}</span>
+        {/if}
+        <!-- 20-Min-Filter Toggle (nur wenn Abholort gesetzt) -->
+        {#if pickupCoords}
+          <button
+            type="button"
+            onclick={() => { detourFilterActive = !detourFilterActive; }}
+            class="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors {detourFilterActive
+              ? 'bg-rose-600 text-white border-rose-600'
+              : 'bg-white text-gray-500 border-gray-200 hover:border-rose-300'}"
+            title="Nur Fahrten ≤20 Min Umweg anzeigen"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07-.71.71M6.34 17.66l-.71.71m12.02 0-.71-.71M6.34 6.34l-.71-.71"/>
+            </svg>
+            Auf Route
+          </button>
+        {/if}
+      </div>
     </div>
 
-    {#if filteredRides.length === 0}
+    {#if hiddenByDetourFilter > 0}
+      <p class="text-xs text-gray-400 mb-3 flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        {hiddenByDetourFilter} Fahrt{hiddenByDetourFilter > 1 ? 'en' : ''} mit grossem Umweg ausgeblendet
+      </p>
+    {/if}
+
+    {#if displayedRides.length === 0}
       <div class="flex flex-col items-center justify-center py-16 text-center">
-        {#if activeCategory !== 'all'}
+        {#if detourFilterActive && pickupCoords && ridesWithPreview.length > 0}
+          <div class="text-5xl mb-4">🗺️</div>
+          <p class="font-semibold text-gray-800 mb-1">Keine passenden Fahrten</p>
+          <p class="text-gray-400 text-sm mb-4">Alle Fahrten haben einen Umweg von mehr als 20 Minuten.</p>
+          <button
+            type="button"
+            onclick={() => { detourFilterActive = false; }}
+            class="text-rose-600 font-semibold text-sm mb-4"
+          >
+            Filter aufheben
+          </button>
+        {:else if activeCategory !== 'all'}
           <div class="text-5xl mb-4">{CHIPS.find(c => c.key === activeCategory)?.emoji}</div>
           <p class="font-semibold text-gray-800 mb-1">Noch keine {activeCatLabel}-Fahrten</p>
           <p class="text-gray-400 text-sm mb-4">Sei der Erste und biete eine Fahrt an.</p>
@@ -374,11 +436,11 @@
             </svg>
           </div>
           <p class="font-semibold text-gray-800 mb-1">Keine Fahrten gefunden</p>
-          <p class="text-gray-400 text-sm mb-4">Fuer &quot;{data.search}&quot; gibt es noch nichts.</p>
+          <p class="text-gray-400 text-sm mb-4">Für „{data.search}" gibt es noch nichts.</p>
           <a href="/" class="text-rose-600 font-semibold text-sm mb-2">Alle Fahrten anzeigen</a>
         {:else}
           <div class="text-5xl mb-4">🚗</div>
-          <p class="font-semibold text-gray-800 mb-1">Noch keine Fahrten verfuegbar</p>
+          <p class="font-semibold text-gray-800 mb-1">Noch keine Fahrten verfügbar</p>
           <p class="text-gray-400 text-sm mb-5">Leg los und biete die erste Fahrt an!</p>
         {/if}
         <a href="/rides/new" class="bg-rose-600 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-rose-700 transition-colors">
@@ -387,8 +449,7 @@
       </div>
     {:else}
       <div class="flex flex-col gap-4 pb-8">
-        {#each filteredRides as ride (ride._id)}
-          {@const preview = calcPreview(ride)}
+        {#each displayedRides as { ride, preview } (ride._id)}
           <RideCard {ride} {preview} {pickupCoords} />
         {/each}
       </div>

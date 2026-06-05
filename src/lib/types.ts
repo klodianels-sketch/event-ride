@@ -140,6 +140,7 @@ export type NotificationType =
   | 'booking_accepted'
   | 'booking_rejected'
   | 'booking_cancelled_passenger'
+  | 'booking_cancelled_driver'
   | 'ride_cancelled'
   | 'times_updated'
   | 'rating_pending'

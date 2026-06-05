@@ -3,6 +3,13 @@ export type TimeAccuracy = 'exact' | 'estimated' | 'fallback';
 const USER_AGENT = 'EventRideApp/1.0 (ZHAW Student Project)';
 const AVG_SPEED_KMH = 55; // konservativ fuer Schweizer Strassen inkl. Ortsdurchfahrten
 
+// 30 % Reisezeitpuffer: Stau, Baustellen, Parkplatzsuche, Ortsdurchfahrten
+export const TRAVEL_BUFFER_FACTOR = 1.3;
+
+export function applyTravelBuffer(seconds: number): number {
+  return Math.round(seconds * TRAVEL_BUFFER_FACTOR);
+}
+
 export interface RouteResult {
   totalSeconds: number;
   legSeconds: number[];
@@ -20,7 +27,7 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Geschaetzte Fahrtdauer via Haversine — nur fuer Vorschau, nicht fuer finale Buchung
+// Geschaetzte Fahrtdauer via Haversine inkl. 30 % Puffer — fuer konsistente Vorschau
 export function haversineSeconds(
   lat1: number,
   lon1: number,
@@ -29,7 +36,7 @@ export function haversineSeconds(
   speedKmH = AVG_SPEED_KMH
 ): number {
   const km = haversineKm(lat1, lon1, lat2, lon2);
-  return Math.round((km / speedKmH) * 3600);
+  return applyTravelBuffer(Math.round((km / speedKmH) * 3600));
 }
 
 // OSRM-Mehrpunkt-Route — nur server-seitig aufrufen (kein CORS-Problem vom Server)
@@ -51,9 +58,9 @@ export async function osrmRoute(
       throw new Error('OSRM: kein Route-Ergebnis');
     }
     const route = data.routes[0];
-    const legSeconds = (route.legs as any[]).map((l: any) => Math.round(l.duration as number));
+    const legSeconds = (route.legs as any[]).map((l: any) => applyTravelBuffer(Math.round(l.duration as number)));
     return {
-      totalSeconds: Math.round(route.duration as number),
+      totalSeconds: applyTravelBuffer(Math.round(route.duration as number)),
       legSeconds,
       accuracy: 'exact'
     };
@@ -62,6 +69,7 @@ export async function osrmRoute(
     const legSeconds: number[] = [];
     let total = 0;
     for (let i = 0; i < waypoints.length - 1; i++) {
+      // haversineSeconds already includes TRAVEL_BUFFER_FACTOR
       const s = haversineSeconds(
         Number(waypoints[i].lat),
         Number(waypoints[i].lon),

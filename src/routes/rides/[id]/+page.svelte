@@ -27,6 +27,17 @@
     accepted: { text: 'Buchung bestätigt', color: 'bg-green-100 text-green-700' },
     confirmed:{ text: 'Buchung bestätigt', color: 'bg-green-100 text-green-700' },
   };
+
+  // Teilnehmerstatus-Text (privacy-safe)
+  const participantLabel = $derived(() => {
+    const acc = data.ride.acceptedCount ?? 0;
+    const pend = data.ride.pendingCount ?? 0;
+    if (acc === 0 && pend === 0) return null;
+    const parts: string[] = [];
+    if (acc > 0) parts.push(`${acc} bestätigt`);
+    if (pend > 0) parts.push(`${pend} anfragend`);
+    return parts.join(' · ');
+  });
 </script>
 
 <svelte:head>
@@ -36,7 +47,7 @@
 <div class="flex flex-col min-h-screen pb-24">
 
   <!-- Hero-Bild ─────────────────────────────────────────────── -->
-  <div class="relative h-60 bg-gradient-to-br {gradient} overflow-hidden">
+  <div class="relative h-64 bg-gradient-to-br {gradient} overflow-hidden">
     <img
       src={heroImg}
       alt={data.ride.eventName}
@@ -44,13 +55,12 @@
       loading="eager"
       onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
     />
-    <!-- Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
     <!-- Navigation -->
     <a
       href="/"
-      class="absolute top-4 left-4 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow"
+      class="absolute top-12 left-4 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow"
       aria-label="Zurück"
     >
       <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -59,7 +69,7 @@
     </a>
 
     <!-- Kategorie-Badge -->
-    <div class="absolute top-4 right-4 flex items-center gap-1.5 bg-black/40 backdrop-blur px-2.5 py-1 rounded-full">
+    <div class="absolute top-12 right-4 flex items-center gap-1.5 bg-black/40 backdrop-blur px-2.5 py-1 rounded-full">
       <span class="text-base leading-none">{emoji}</span>
       <span class="text-white text-xs font-semibold">{label}</span>
     </div>
@@ -78,7 +88,7 @@
 
   <div class="px-4 pt-4 flex flex-col gap-4">
 
-    <!-- Mein Buchungsstatus (wenn vorhanden) ───────────────────── -->
+    <!-- Mein Buchungsstatus ───────────────────────────────────── -->
     {#if data.myBooking}
       {@const statusInfo = STATUS_LABEL[data.myBooking.status]}
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -122,19 +132,24 @@
         <div class="bg-gray-50 rounded-xl p-3">
           <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Ankunft Event ca.</p>
           <p class="font-bold text-gray-900 text-base">{formatTime(data.ride.estimatedArrivalTime)}</p>
-          <p class="text-xs text-rose-500 mt-0.5">vom Startort</p>
+          <p class="text-xs text-rose-500 mt-0.5">ab Startort</p>
         </div>
       </div>
 
-      <!-- Plätze + Preis -->
+      <!-- Plätze + Preis + Teilnehmer -->
       <div class="flex items-center justify-between py-3 border-t border-gray-50">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-          <span class="text-sm text-gray-600">
-            <span class="font-bold text-gray-900">{data.ride.seatsAvailable}</span> von {data.ride.seats} Plätzen frei
-          </span>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span class="text-sm text-gray-600">
+              <span class="font-bold text-gray-900">{data.ride.seatsAvailable}</span> von {data.ride.seats} Plätzen frei
+            </span>
+          </div>
+          {#if participantLabel()}
+            <p class="text-xs text-gray-400 pl-6">{participantLabel()}</p>
+          {/if}
         </div>
         <span class="font-bold text-xl text-gray-900">CHF {data.ride.pricePerPerson.toFixed(2)}</span>
       </div>
@@ -173,10 +188,78 @@
       {/if}
     </div>
 
+    <!-- Bestätigte Mitfahrer (privacy-safe) ────────────────────── -->
+    {#if data.ride.confirmedPassengers && data.ride.confirmedPassengers.length > 0}
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Mitfahrende</p>
+        <div class="flex flex-wrap gap-2">
+          {#each data.ride.confirmedPassengers as p}
+            <span class="flex items-center gap-1.5 bg-gray-50 border border-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+              <span class="w-5 h-5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-bold flex items-center justify-center shrink-0">
+                {p.displayName[0]}
+              </span>
+              {p.displayName}
+            </span>
+          {/each}
+        </div>
+        {#if data.pendingCount && data.pendingCount > 0 && data.isDriver}
+          <p class="text-xs text-amber-600 mt-2">+ {data.pendingCount} offene Anfrage{data.pendingCount > 1 ? 'n' : ''}</p>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Route-Info (abstrakt, privacy-safe) ─────────────────────── -->
+    {#if data.routeStops && data.routeStops.length > 0}
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Route</p>
+        <div class="flex flex-col gap-0">
+          <!-- Start -->
+          <div class="flex items-start gap-3">
+            <div class="flex flex-col items-center shrink-0 mt-0.5">
+              <div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
+              <div class="w-0.5 h-6 bg-gray-200 mt-0.5"></div>
+            </div>
+            <div class="pb-3">
+              <p class="text-sm font-medium text-gray-800">{data.ride.startLocation}</p>
+              <p class="text-xs text-gray-400">Startort · {formatTime(data.ride.departureTime)}</p>
+            </div>
+          </div>
+          <!-- Zwischenorte (abstrahiert) -->
+          {#each data.routeStops as stop, i}
+            <div class="flex items-start gap-3">
+              <div class="flex flex-col items-center shrink-0 mt-0.5">
+                <div class="w-2 h-2 rounded-full bg-gray-300 border-2 border-white ring-1 ring-gray-200"></div>
+                {#if i < data.routeStops.length - 1}
+                  <div class="w-0.5 h-6 bg-gray-200 mt-0.5"></div>
+                {:else}
+                  <div class="w-0.5 h-6 bg-gray-200 mt-0.5"></div>
+                {/if}
+              </div>
+              <div class="pb-3">
+                <p class="text-sm text-gray-600">{stop}</p>
+                <p class="text-xs text-gray-400">Abholpunkt</p>
+              </div>
+            </div>
+          {/each}
+          <!-- Ziel -->
+          <div class="flex items-start gap-3">
+            <div class="flex flex-col items-center shrink-0 mt-0.5">
+              <div class="w-2.5 h-2.5 rounded-full bg-gray-800"></div>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-800">{data.ride.eventLocation}</p>
+              <p class="text-xs text-gray-400">Ziel · ca. {formatTime(data.ride.estimatedArrivalTime)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Fahrer-Karte ────────────────────────────────────────────── -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Fahrer</p>
-      <a href="/users/{data.ride._id}" class="flex items-center gap-3">
+      <!-- Bug-Fix: war data.ride._id, muss driverId sein -->
+      <a href="/users/{data.driverInfo?._id ?? data.ride.driverId}" class="flex items-center gap-3">
         {#if data.driverInfo?.avatarUrl}
           <img
             src={data.driverInfo.avatarUrl}
@@ -229,7 +312,7 @@
     <!-- Weitere Fahrten zum gleichen Event ─────────────────────── -->
     {#if data.allRides.length > 0}
       <div>
-        <h2 class="font-semibold text-gray-900 mb-3">Weitere Fahrten zum gleichen Event</h2>
+        <h2 class="font-semibold text-gray-900 mb-3">Weitere Fahrten zu diesem Event</h2>
         <div class="flex flex-col gap-3">
           {#each data.allRides as ride}
             <RideCard {ride} />
@@ -239,7 +322,7 @@
     {/if}
 
     <!-- Eigene Fahrt anbieten ───────────────────────────────────── -->
-    <div class="bg-gray-50 rounded-2xl p-4 text-center">
+    <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-4 text-center border border-gray-100">
       <p class="text-sm text-gray-600 mb-3">Auch zum gleichen Event unterwegs?</p>
       <a
         href="/rides/new"

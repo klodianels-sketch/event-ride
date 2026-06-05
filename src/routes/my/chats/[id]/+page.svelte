@@ -62,7 +62,7 @@
 
   <!-- Header ──────────────────────────────────────────────────── -->
   <div class="shrink-0 flex items-center gap-3 px-4 pt-12 pb-3 bg-white border-b border-gray-100">
-    <a href="/my/chats" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors shrink-0">
+    <a href="/inbox?tab=chats" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors shrink-0">
       <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
       </svg>
@@ -140,9 +140,14 @@
       method="POST"
       action="?/send"
       use:enhance={() => {
-        return ({ update }) => {
-          messageText = '';
-          update();
+        const text = messageText;
+        messageText = '';
+        return async ({ update }) => {
+          await update({ reset: false });
+          // Nach Senden nach unten scrollen
+          if (messagesEl) {
+            setTimeout(() => { messagesEl!.scrollTop = messagesEl!.scrollHeight; }, 50);
+          }
         };
       }}
       class="flex gap-2"

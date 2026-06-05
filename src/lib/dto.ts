@@ -28,6 +28,11 @@ export interface PublicRideDTO {
   noShowPolicy: { waitMinutes: number; penaltyPercent: number };
   routeVersion: number;
   status: string;
+  // Teilnehmer-Sichtbarkeit (privacy-safe aggregated counts)
+  acceptedCount?: number;   // bestaetigte Mitfahrer
+  pendingCount?: number;    // offene Anfragen (nur als Zahl, keine Namen)
+  // Bestaetigte Mitfahrer: nur Vorname + Initial (Vorname A.) — sichtbar fuer alle Beteiligten
+  confirmedPassengers?: Array<{ displayName: string }>;
 }
 
 // Was ein Mitfahrer ueber seine eigene Buchung sehen darf
@@ -73,7 +78,14 @@ function parseCoords(raw: unknown): { lat: number; lon: number } | undefined {
   return { lat, lon };
 }
 
-export function toPublicRideDTO(r: WithId<Document>): PublicRideDTO {
+export function toPublicRideDTO(
+  r: WithId<Document>,
+  opts?: {
+    acceptedCount?: number;
+    pendingCount?: number;
+    confirmedPassengers?: Array<{ displayName: string }>;
+  }
+): PublicRideDTO {
   const noShowPolicy = (r.noShowPolicy as { waitMinutes: number; penaltyPercent: number } | undefined) ?? {
     waitMinutes: 15,
     penaltyPercent: 100
@@ -99,7 +111,10 @@ export function toPublicRideDTO(r: WithId<Document>): PublicRideDTO {
     fairplayWindowMinutes: (r.fairplayWindowMinutes as number) ?? 10,
     noShowPolicy,
     routeVersion: (r.routeVersion as number) ?? 0,
-    status: r.status as string
+    status: r.status as string,
+    acceptedCount: opts?.acceptedCount,
+    pendingCount: opts?.pendingCount,
+    confirmedPassengers: opts?.confirmedPassengers
   };
 }
 

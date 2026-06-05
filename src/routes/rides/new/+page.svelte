@@ -11,11 +11,44 @@
 
   let startLocationValue = $state('');
   let eventLocationValue = $state('');
+  let eventNameValue = $state('');
   let selectedCategory = $state('other');
 
   let suggestions = $state<any[]>([]);
   let activeField = $state<'start' | 'event' | null>(null);
   let typingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Event-Autosuggest
+  let eventSuggestions = $state<Array<{ name: string; category?: string; location?: string }>>([]);
+  let showEventSuggestions = $state(false);
+  let eventTypingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function onEventNameInput() {
+    showEventSuggestions = true;
+    if (eventTypingTimer) clearTimeout(eventTypingTimer);
+    if (eventNameValue.length < 2) { eventSuggestions = []; return; }
+    eventTypingTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/events?q=${encodeURIComponent(eventNameValue)}`);
+        const data = await res.json();
+        eventSuggestions = data.suggestions ?? [];
+      } catch {
+        eventSuggestions = [];
+      }
+    }, 250);
+  }
+
+  function selectEventSuggestion(s: { name: string; category?: string; location?: string }) {
+    eventNameValue = s.name;
+    if (s.location && !eventLocationValue) eventLocationValue = s.location;
+    if (s.category) selectedCategory = s.category;
+    eventSuggestions = [];
+    showEventSuggestions = false;
+  }
+
+  const CATEGORY_MAP: Record<string, string> = {
+    music: '🎵', festival: '🎪', nightlife: '🌙', sport: '⚡', hiking: '🏔️', culture: '🎭', other: '✨'
+  };
 
   let mapContainer: HTMLElement;
   let map: any = null;
@@ -97,6 +130,7 @@
   function closeSuggestions() {
     suggestions = [];
     activeField = null;
+    showEventSuggestions = false;
   }
 
   async function getMyLocation() {
@@ -202,8 +236,9 @@
         </div>
       </div>
 
-      <!-- Event Name ─────────────────────────────────────────── -->
-      <div>
+      <!-- Event Name mit Autosuggest ─────────────────────────── -->
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div class="relative" onclick={(e) => e.stopPropagation()}>
         <label for="eventName" class="block text-sm font-semibold text-gray-700 mb-1.5">
           Event-Name <span class="text-rose-500">*</span>
         </label>
@@ -212,9 +247,35 @@
           name="eventName"
           type="text"
           required
+          bind:value={eventNameValue}
+          oninput={onEventNameInput}
+          onfocus={() => { if (eventNameValue.length >= 2) showEventSuggestions = true; }}
+          onkeydown={(e) => { if (e.key === 'Escape') { showEventSuggestions = false; } }}
+          autocomplete="off"
           placeholder="z.B. Openair Frauenfeld"
           class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm"
         />
+        {#if showEventSuggestions && eventSuggestions.length > 0}
+          <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+            {#each eventSuggestions as s}
+              <li>
+                <button
+                  type="button"
+                  onclick={() => selectEventSuggestion(s)}
+                  class="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0 flex items-center gap-3"
+                >
+                  <span class="text-base shrink-0">{CATEGORY_MAP[s.category ?? 'other'] ?? '✨'}</span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 truncate">{s.name}</p>
+                    {#if s.location}
+                      <p class="text-xs text-gray-400 truncate">{s.location}</p>
+                    {/if}
+                  </div>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
 
       <!-- Event Ort ──────────────────────────────────────────── -->

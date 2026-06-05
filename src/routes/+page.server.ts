@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { getDb } from '$lib/db';
+import { ObjectId } from 'mongodb';
 import { toPublicRideDTO } from '$lib/dto';
 import { ensureRideCoords } from '$lib/ride-repair.server';
 
@@ -20,18 +21,16 @@ export const load: PageServerLoad = async ({ url }) => {
     .collection('rides')
     .find(filter)
     .sort({ departureTime: 1 })
-    .limit(20)
+    .limit(30)
     .toArray();
 
   // Fire-and-forget: Koordinaten fuer alte Fahrten im Hintergrund reparieren.
-  // Die aktuelle Antwort geht sofort raus. Beim naechsten Seitenlade sind die Daten da.
   const ridesNeedingRepair = rides.filter(r => !r.startCoords || !r.eventLocationCoords);
   if (ridesNeedingRepair.length > 0) {
     (async () => {
       for (const ride of ridesNeedingRepair.slice(0, 5)) {
         try {
           await ensureRideCoords(ride, db);
-          // Nominatim-Rate-Limit: 1 Req/s
           await new Promise(resolve => setTimeout(resolve, 1100));
         } catch (err) {
           console.error('[home] coord repair error:', err);
@@ -40,8 +39,32 @@ export const load: PageServerLoad = async ({ url }) => {
     })();
   }
 
+  // Teilnehmer-Counts für alle Rides (eine Aggregation statt N Queries)
+  const rideIds = rides.map(r => r._id as ObjectId);
+  const bookingAgg = rideIds.length > 0
+    ? await db.collection('bookings').aggregate([
+        { $match: { rideId: { $in: rideIds }, status: { $in: ['accepted', 'confirmed', 'pending'] } } },
+        { $group: { _id: { rideId: '$rideId', status: '$status' }, count: { $sum: 1 } } }
+      ]).toArray()
+    : [];
+
+  const acceptedCountMap: Record<string, number> = {};
+  const pendingCountMap: Record<string, number> = {};
+  for (const row of bookingAgg) {
+    const key = (row._id as { rideId: ObjectId; status: string }).rideId.toString();
+    const status = (row._id as { rideId: ObjectId; status: string }).status;
+    if (status === 'accepted' || status === 'confirmed') {
+      acceptedCountMap[key] = (acceptedCountMap[key] ?? 0) + (row.count as number);
+    } else if (status === 'pending') {
+      pendingCountMap[key] = (pendingCountMap[key] ?? 0) + (row.count as number);
+    }
+  }
+
   return {
-    rides: rides.map(toPublicRideDTO),
+    rides: rides.map(r => toPublicRideDTO(r, {
+      acceptedCount: acceptedCountMap[r._id.toString()] ?? 0,
+      pendingCount: pendingCountMap[r._id.toString()] ?? 0
+    })),
     ridesNeedingRepair: ridesNeedingRepair.length,
     search
   };

@@ -105,33 +105,28 @@
     {/if}
 
     <!-- Zeitblock (nur wenn accepted) ──────────────────── -->
-    {#if isAccepted && booking.estimatedPickupTime && booking.recommendedReadyTime && booking.latestReadyTime}
+    {#if isAccepted && booking.estimatedPickupTime && booking.latestReadyTime}
       <div class="bg-rose-50 border border-rose-100 rounded-xl p-3.5">
         <p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-2.5">Deine Abholzeiten</p>
         <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
+          <!-- Hauptinfo: Spätestens abholbereit = Ankunftszeit des Fahrers -->
+          <div class="flex items-center justify-between bg-rose-100/60 rounded-lg px-2.5 py-2">
             <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-rose-300 shrink-0"></div>
-              <span class="text-sm text-gray-600">Empfohlen bereit ab</span>
+              <div class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></div>
+              <span class="text-sm font-semibold text-rose-800">Spätestens abholbereit</span>
             </div>
-            <span class="font-bold text-rose-700">{formatTime(booking.recommendedReadyTime)}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></div>
-              <span class="text-sm text-gray-600">Fahrer kommt ca.</span>
-            </div>
-            <span class="font-bold text-gray-900">
+            <span class="font-bold text-rose-700 text-base">
               {formatTime(booking.estimatedPickupTime)}
               {#if booking.timeAccuracy === 'fallback'}
-                <span class="text-xs text-gray-400 ml-1">(~)</span>
+                <span class="text-xs text-rose-400 ml-1">~</span>
               {/if}
             </span>
           </div>
+          <!-- Maximale Wartezeit des Fahrers -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></div>
-              <span class="text-sm text-gray-600">Fahrer wartet maximal bis</span>
+              <span class="text-sm text-gray-500">Fahrer fährt spätestens ab</span>
             </div>
             <span class="font-semibold text-amber-600">{formatTime(booking.latestReadyTime)}</span>
           </div>
@@ -139,7 +134,7 @@
             <div class="flex items-center justify-between border-t border-rose-100 pt-2 mt-0.5">
               <div class="flex items-center gap-2">
                 <div class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></div>
-                <span class="text-sm text-gray-600">Ankunft Event ca.</span>
+                <span class="text-sm text-gray-500">Ankunft Event ca.</span>
               </div>
               <span class="font-semibold text-gray-700">~{formatTime(booking.estimatedArrivalAtEvent)}</span>
             </div>
