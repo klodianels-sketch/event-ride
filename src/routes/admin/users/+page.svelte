@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { page } from '$app/state';
   import { formatDate } from '$lib/time';
 
   let { data, form } = $props();
@@ -38,9 +39,9 @@
 
   <!-- Filter ─────────────────────────────────────────────────── -->
   <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
-    {#each [['all', 'Alle'], ['disabled', 'Gesperrt'], ['admin', 'Admins']] as [val, label]}
+    {#each [['all', 'Alle'], ['disabled', 'Gesperrt'], ['admin', 'Admins']] as [val, label] (val)}
       <a
-        href="?filter={val}"
+        href={`${page.url.pathname}?filter=${val}`}
         class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors
           {data.filter === val ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
       >
@@ -51,7 +52,7 @@
 
   <!-- Nutzerliste ─────────────────────────────────────────────── -->
   <div class="flex flex-col gap-3">
-    {#each data.users as u}
+    {#each data.users as u (u._id)}
       <div class="bg-white rounded-xl border {u.isDisabled ? 'border-red-200' : 'border-gray-100'} p-4">
         <!-- Info-Zeile ──────────────────────────────────────── -->
         <div class="flex items-start justify-between gap-2 mb-2">
