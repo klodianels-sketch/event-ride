@@ -170,7 +170,7 @@
                       {initials(req.passengerName)}
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="font-semibold text-gray-900 text-sm">{req.passengerName} moechte mitfahren</p>
+                      <p class="font-semibold text-gray-900 text-sm">{req.passengerName} möchte mitfahren</p>
                       <p class="text-xs text-gray-400 truncate">Abholort: {req.pickupLocation}</p>
                       <p class="text-xs font-semibold text-gray-700 mt-0.5">CHF {req.bookedPrice.toFixed(2)}</p>
                     </div>
@@ -341,7 +341,7 @@
                   <div class="flex gap-3 mt-2">
                     {#if notif.conversationId}
                       <a href="/my/chats/{notif.conversationId}" class="text-xs font-semibold text-rose-500 hover:text-rose-600">
-                        Chat oeffnen
+                        Chat öffnen
                       </a>
                     {/if}
                     {#if notif.rideId}

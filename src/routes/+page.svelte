@@ -97,7 +97,7 @@
 
   async function getPickupFromGps() {
     if (!browser || !navigator.geolocation) {
-      pickupGpsError = 'Standortermittlung ist in diesem Browser nicht verfuegbar.';
+      pickupGpsError = 'Standortermittlung ist in diesem Browser nicht verfügbar.';
       return;
     }
     pickupGpsLoading = true;
@@ -122,7 +122,7 @@
     } catch (err: any) {
       pickupGpsError =
         err?.code === 1
-          ? 'Standortzugriff verweigert. Bitte die Einstellung im Browser pruefen.'
+          ? 'Standortzugriff verweigert. Bitte die Einstellung im Browser prüfen.'
           : 'Standort konnte nicht ermittelt werden.';
     } finally {
       pickupGpsLoading = false;
@@ -240,11 +240,11 @@
             onclick={clearPickup}
             class="text-white/70 text-xs font-semibold shrink-0 hover:text-white transition-colors px-2 py-1"
           >
-            Aendern
+            Ändern
           </button>
         </div>
         {#if anyMissingCoords}
-          <p class="text-rose-200 text-xs mt-1.5 px-1">Zeiten werden beim naechsten Laden aktualisiert.</p>
+          <p class="text-rose-200 text-xs mt-1.5 px-1">Zeiten werden beim nächsten Laden aktualisiert.</p>
         {:else}
           <p class="text-rose-200 text-xs mt-1.5 px-1">Abholzeiten unten sind auf deinen Standort angepasst.</p>
         {/if}

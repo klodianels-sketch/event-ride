@@ -95,7 +95,7 @@
       <div class="pt-4">
         <div class="flex items-center justify-between mb-3">
           <h2 class="font-bold text-gray-900">
-            Ergebnisse fuer &ldquo;{data.search}&rdquo;
+            Ergebnisse für „{data.search}"
           </h2>
           {#if data.rides.length > 0}
             <span class="text-sm text-gray-400 font-medium">{data.rides.length}</span>
@@ -106,9 +106,9 @@
           <div class="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-100">
             <div class="text-4xl mb-3">🔍</div>
             <p class="font-semibold text-gray-800 mb-1">Nichts gefunden</p>
-            <p class="text-gray-400 text-sm mb-5">Keine Fahrten fuer &ldquo;{data.search}&rdquo;.</p>
+            <p class="text-gray-400 text-sm mb-5">Keine Fahrten für „{data.search}".</p>
             <a href="/rides/new" class="bg-rose-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-rose-700 transition-colors">
-              Fahrt fuer dieses Event anbieten
+              Fahrt für dieses Event anbieten
             </a>
           </div>
         {:else}
@@ -136,7 +136,7 @@
               }}
               class="text-xs text-gray-400 hover:text-gray-600"
             >
-              Alles loeschen
+              Alles löschen
             </button>
           </div>
           <div class="flex flex-col gap-1">

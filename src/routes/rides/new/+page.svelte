@@ -18,6 +18,33 @@
   let startCoords = $state<{ lat: number; lon: number } | null>(null);
   let eventCoords = $state<{ lat: number; lon: number } | null>(null);
 
+  // ── Keyboard-Navigation für Suggestion-Listen ────────────────
+  let focusedSuggestionIdx = $state(-1);
+
+  function resetSuggestionFocus() { focusedSuggestionIdx = -1; }
+
+  function handleSuggestionKeydown<T>(
+    e: KeyboardEvent,
+    list: T[],
+    selectFn: (item: T) => void,
+    closeFn: () => void
+  ) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedSuggestionIdx = Math.min(focusedSuggestionIdx + 1, list.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedSuggestionIdx = Math.max(focusedSuggestionIdx - 1, -1);
+    } else if (e.key === 'Enter' && focusedSuggestionIdx >= 0) {
+      e.preventDefault();
+      selectFn(list[focusedSuggestionIdx]);
+      resetSuggestionFocus();
+    } else if (e.key === 'Escape') {
+      closeFn();
+      resetSuggestionFocus();
+    }
+  }
+
   // ── Zwischenstopps ────────────────────────────────────────────
   interface Waypoint { id: string; label: string; lat: number; lon: number }
   let waypoints     = $state<Waypoint[]>([]);
@@ -173,6 +200,7 @@
   function handleField(field: 'start' | 'event') {
     const value = field === 'start' ? startLocationValue : eventLocationValue;
     activeField = field;
+    resetSuggestionFocus();
     if (typingTimer) clearTimeout(typingTimer);
     if (value.length < 3) { suggestions = []; return; }
     typingTimer = setTimeout(async () => {
@@ -306,6 +334,7 @@
     showEventSuggestions = false;
     showWpSuggestions = false;
     showWpInput = false;
+    resetSuggestionFocus();
   }
 
   // ── Berechnete Werte ──────────────────────────────────────────
@@ -366,7 +395,7 @@
       <input type="hidden" name="waypoints" value={waypointsJson} />
 
       <!-- ── ABSCHNITT 1: Event ─────────────────────────────────── -->
-      <section class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <section class="bg-white rounded-2xl border border-gray-100 shadow-sm">
         <div class="px-4 pt-4 pb-1">
           <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Event</p>
         </div>
@@ -400,17 +429,25 @@
               bind:value={eventNameValue}
               oninput={onEventNameInput}
               onfocus={() => { if (eventNameValue.length >= 2) showEventSuggestions = true; }}
-              onkeydown={(e) => { if (e.key === 'Escape') showEventSuggestions = false; }}
+              onkeydown={(e) => handleSuggestionKeydown(e, eventSuggestions, selectEventSuggestion, () => { showEventSuggestions = false; })}
               autocomplete="off"
+              aria-autocomplete="list"
+              aria-expanded={showEventSuggestions && eventSuggestions.length > 0}
               placeholder="z.B. Openair Frauenfeld"
               class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm transition-colors"
             />
             {#if showEventSuggestions && eventSuggestions.length > 0}
-              <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                {#each eventSuggestions as s}
-                  <li>
-                    <button type="button" onclick={() => selectEventSuggestion(s)}
-                      class="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0 flex items-center gap-3">
+              <ul
+                role="listbox"
+                class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-[100] max-h-56 overflow-y-auto"
+              >
+                {#each eventSuggestions as s, i}
+                  <li role="option" aria-selected={focusedSuggestionIdx === i}>
+                    <button
+                      type="button"
+                      onclick={() => { resetSuggestionFocus(); selectEventSuggestion(s); }}
+                      class="w-full text-left px-4 py-2.5 border-b border-gray-100 last:border-0 flex items-center gap-3 transition-colors {focusedSuggestionIdx === i ? 'bg-rose-50' : 'hover:bg-gray-50'}"
+                    >
                       <span class="text-base shrink-0">{CATEGORY_MAP[s.category ?? 'other'] ?? '✨'}</span>
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-gray-900 truncate">{s.name}</p>
@@ -429,7 +466,7 @@
               Veranstaltungsort <span class="text-rose-500">*</span>
             </label>
             <div class="relative">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
               </svg>
               <input
@@ -437,21 +474,35 @@
                 bind:value={eventLocationValue}
                 oninput={() => handleField('event')}
                 onfocus={() => { if (eventLocationValue.length >= 3) activeField = 'event'; }}
+                onkeydown={(e) => handleSuggestionKeydown(e, suggestions, selectSuggestion, () => { suggestions = []; activeField = null; })}
                 autocomplete="off" required
+                aria-autocomplete="list"
+                aria-expanded={activeField === 'event' && suggestions.length > 0}
                 placeholder="z.B. Frauenfeld, TG"
                 class="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm transition-colors"
               />
             </div>
             {#if activeField === 'event' && suggestions.length > 0}
-              <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                {#each suggestions as s (s.properties.osm_id ?? s.properties.name)}
-                  <li>
-                    <button type="button" onclick={(e) => { e.stopPropagation(); selectSuggestion(s); }}
-                      class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                      <span class="font-medium">{s.properties.name ?? ''}</span>
-                      {#if s.properties.city || s.properties.county}
-                        <span class="text-gray-400 ml-1 text-xs">{[s.properties.city, s.properties.county].filter(Boolean).join(', ')}</span>
-                      {/if}
+              <ul
+                role="listbox"
+                class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-[100] max-h-56 overflow-y-auto"
+              >
+                {#each suggestions as s, i (s.properties.osm_id ?? s.properties.name)}
+                  <li role="option" aria-selected={focusedSuggestionIdx === i}>
+                    <button
+                      type="button"
+                      onclick={(e) => { e.stopPropagation(); resetSuggestionFocus(); selectSuggestion(s); }}
+                      class="w-full text-left px-4 py-2.5 text-sm border-b border-gray-100 last:border-0 flex items-center gap-2 transition-colors {focusedSuggestionIdx === i ? 'bg-rose-50 text-rose-700' : 'hover:bg-gray-50 text-gray-800'}"
+                    >
+                      <svg class="w-3.5 h-3.5 shrink-0 {focusedSuggestionIdx === i ? 'text-rose-400' : 'text-gray-400'}" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                      </svg>
+                      <div class="min-w-0">
+                        <span class="font-medium truncate block">{s.properties.name ?? ''}</span>
+                        {#if s.properties.city || s.properties.county}
+                          <span class="text-gray-400 text-xs truncate block">{[s.properties.city, s.properties.county].filter(Boolean).join(', ')}</span>
+                        {/if}
+                      </div>
                     </button>
                   </li>
                 {/each}
@@ -462,27 +513,31 @@
       </section>
 
       <!-- ── ABSCHNITT 2: Route ─────────────────────────────────── -->
-      <section class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <section class="bg-white rounded-2xl border border-gray-100 shadow-sm">
         <div class="px-4 pt-4 pb-1">
           <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Deine Route</p>
         </div>
         <div class="px-4 pb-4 flex flex-col gap-4">
 
           <!-- Startort -->
-          <div>
+          <!-- relative wrapper ist der Positionierungskontext für das Dropdown -->
+          <div class="relative">
             <label for="startLocation" class="block text-sm font-semibold text-gray-700 mb-1">
               Dein Startort <span class="text-rose-500">*</span>
             </label>
             <p class="text-xs text-gray-400 mb-1.5">Nur deine Stadt wird öffentlich angezeigt — deine exakte Adresse bleibt privat.</p>
-            <div class="flex gap-2 relative">
+            <div class="flex gap-2">
               <div class="flex-1 relative">
-                <div class="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-sm z-10"></div>
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-rose-500 border-2 border-white shadow-sm z-10 pointer-events-none"></div>
                 <input
                   id="startLocation" name="startLocation" type="text"
                   bind:value={startLocationValue}
                   oninput={() => handleField('start')}
                   onfocus={() => { if (startLocationValue.length >= 3) activeField = 'start'; }}
+                  onkeydown={(e) => handleSuggestionKeydown(e, suggestions, selectSuggestion, () => { suggestions = []; activeField = null; })}
                   autocomplete="off" required
+                  aria-autocomplete="list"
+                  aria-expanded={activeField === 'start' && suggestions.length > 0}
                   placeholder="z.B. Zürich, Stauffacherstr. 1"
                   class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm transition-colors"
                 />
@@ -512,15 +567,24 @@
               <p class="text-xs text-red-600 mt-1">{locationError}</p>
             {/if}
             {#if activeField === 'start' && suggestions.length > 0}
-              <ul class="absolute left-4 right-4 top-auto mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                {#each suggestions as s (s.properties.osm_id ?? s.properties.name)}
-                  <li>
-                    <button type="button" onclick={(e) => { e.stopPropagation(); selectSuggestion(s); }}
-                      class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                      <span class="font-medium">{s.properties.name ?? ''}</span>
-                      {#if s.properties.city || s.properties.county}
-                        <span class="text-gray-400 ml-1 text-xs">{[s.properties.city, s.properties.county].filter(Boolean).join(', ')}</span>
-                      {/if}
+              <ul
+                role="listbox"
+                class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-[100] max-h-56 overflow-y-auto"
+              >
+                {#each suggestions as s, i (s.properties.osm_id ?? s.properties.name)}
+                  <li role="option" aria-selected={focusedSuggestionIdx === i}>
+                    <button
+                      type="button"
+                      onclick={(e) => { e.stopPropagation(); resetSuggestionFocus(); selectSuggestion(s); }}
+                      class="w-full text-left px-4 py-2.5 text-sm border-b border-gray-100 last:border-0 flex items-center gap-2 transition-colors {focusedSuggestionIdx === i ? 'bg-rose-50 text-rose-700' : 'hover:bg-gray-50 text-gray-800'}"
+                    >
+                      <div class="w-3 h-3 rounded-full {focusedSuggestionIdx === i ? 'bg-rose-400' : 'bg-gray-300'} shrink-0"></div>
+                      <div class="min-w-0">
+                        <span class="font-medium truncate block">{s.properties.name ?? ''}</span>
+                        {#if s.properties.city || s.properties.county}
+                          <span class="text-gray-400 text-xs truncate block">{[s.properties.city, s.properties.county].filter(Boolean).join(', ')}</span>
+                        {/if}
+                      </div>
                     </button>
                   </li>
                 {/each}
