@@ -159,7 +159,8 @@
   // 20-Minuten-Detour-Filter: Filtert Fahrten mit zu grossem Umweg heraus
   // Wenn Abholort gesetzt ist und detourMinutes > 20, wird die Fahrt ausgeblendet
   const MAX_DETOUR_MINUTES = 20;
-  let detourFilterActive = $state(false);
+  // Standardmässig aktiv, sobald ein Abholort gesetzt ist
+  let detourFilterActive = $state(true);
 
   const ridesWithPreview = $derived(
     filteredRides.map((ride: PublicRideDTO) => ({
@@ -385,12 +386,12 @@
             class="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors {detourFilterActive
               ? 'bg-rose-600 text-white border-rose-600'
               : 'bg-white text-gray-500 border-gray-200 hover:border-rose-300'}"
-            title="Nur Fahrten ≤20 Min Umweg anzeigen"
+            title="Nur Fahrten anzeigen, die sinnvoll entlang deiner Route liegen (max. 20 Min Umweg)"
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-6.07-.71.71M6.34 17.66l-.71.71m12.02 0-.71-.71M6.34 6.34l-.71-.71"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
             </svg>
-            Auf Route
+            Auf meiner Route
           </button>
         {/if}
       </div>

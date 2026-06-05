@@ -8,7 +8,12 @@ export const load: PageServerLoad = async ({ url }) => {
   const db = await getDb();
   const search = url.searchParams.get('q') ?? '';
 
-  const filter: Record<string, unknown> = { status: 'active', seatsAvailable: { $gt: 0 } };
+  const now = new Date();
+  const filter: Record<string, unknown> = {
+    status: 'active',
+    seatsAvailable: { $gt: 0 },
+    departureTime: { $gt: now }   // nur zukünftige Fahrten öffentlich anzeigen
+  };
   if (search) {
     filter['$or'] = [
       { eventName: { $regex: search, $options: 'i' } },

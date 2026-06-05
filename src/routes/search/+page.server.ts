@@ -16,6 +16,7 @@ export const load: PageServerLoad = async ({ url }) => {
     .find({
       status: 'active',
       seatsAvailable: { $gt: 0 },
+      departureTime: { $gt: new Date() },
       $or: [
         { eventName: { $regex: search, $options: 'i' } },
         { eventLocation: { $regex: search, $options: 'i' } },

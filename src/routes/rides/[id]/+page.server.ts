@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       status: { $in: ['accepted', 'confirmed', 'pending'] }
     }).toArray(),
     db.collection('rides')
-      .find({ eventName: ride.eventName, status: 'active', seatsAvailable: { $gt: 0 }, _id: { $ne: rideId } })
+      .find({ eventName: ride.eventName, status: 'active', seatsAvailable: { $gt: 0 }, departureTime: { $gt: new Date() }, _id: { $ne: rideId } })
       .sort({ departureTime: 1 })
       .limit(4)
       .toArray()

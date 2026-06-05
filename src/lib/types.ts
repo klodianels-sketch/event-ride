@@ -92,6 +92,8 @@ export interface Ride {
   pricePerPerson: number;
   fairplayWindowMinutes: number;
   noShowPolicy: NoShowPolicy;
+  // Optionale Zwischenstopps, die der Fahrer beim Erstellen festgelegt hat
+  waypoints?: Array<{ label: string; lat: string; lon: string }>;
   routeVersion: number;
   status: 'active' | 'cancelled' | 'completed';
   moderationReason?: string;

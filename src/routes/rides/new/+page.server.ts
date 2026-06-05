@@ -19,14 +19,27 @@ export const actions: Actions = {
 
     const VALID_CATEGORIES = ['music', 'festival', 'nightlife', 'sport', 'hiking', 'culture', 'other'];
     const data = await request.formData();
-    const eventName = (data.get('eventName') as string ?? '').trim();
-    const eventLocation = (data.get('eventLocation') as string ?? '').trim();
-    const exactStartLocation = (data.get('startLocation') as string ?? '').trim();
-    const departureDatetime = data.get('departureTime') as string ?? '';
-    const seatsRaw = parseInt(data.get('seats') as string ?? '0');
-    const priceRaw = parseFloat(data.get('pricePerPerson') as string ?? '0');
-    const eventCategoryRaw = (data.get('eventCategory') as string ?? 'other').trim();
-    const eventCategory = VALID_CATEGORIES.includes(eventCategoryRaw) ? eventCategoryRaw : 'other';
+    const eventName          = (data.get('eventName')       as string ?? '').trim();
+    const eventLocation      = (data.get('eventLocation')   as string ?? '').trim();
+    const exactStartLocation = (data.get('startLocation')   as string ?? '').trim();
+    const departureDatetime  =  data.get('departureTime')   as string ?? '';
+    const seatsRaw           = parseInt(data.get('seats')   as string ?? '0');
+    const priceRaw           = parseFloat(data.get('pricePerPerson') as string ?? '0');
+    const eventCategoryRaw   = (data.get('eventCategory')   as string ?? 'other').trim();
+    const eventCategory      = VALID_CATEGORIES.includes(eventCategoryRaw) ? eventCategoryRaw : 'other';
+
+    // Optionale Zwischenstopps (vom Client als JSON serialisiert)
+    type WaypointInput = { label: string; lat: number | string; lon: number | string };
+    let waypointsList: WaypointInput[] = [];
+    try {
+      const raw = data.get('waypoints') as string ?? '[]';
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        waypointsList = (parsed as WaypointInput[]).filter(
+          w => w && typeof w.label === 'string' && w.lat != null && w.lon != null
+        );
+      }
+    } catch { /* ungültiges JSON → keine Zwischenstopps */ }
 
     if (!eventName || !eventLocation || !exactStartLocation || !departureDatetime) {
       return fail(400, { error: 'Alle Pflichtfelder muessen ausgefuellt sein.' });
@@ -61,10 +74,17 @@ export const actions: Actions = {
       ? await geocode(roughStartLocation)
       : startResult;
 
-    // Direkte Route fuer die Ankunftszeit berechnen (Fahrer → Event, ohne Stopps)
+    // Route inkl. Zwischenstopps berechnen (für estimatedArrivalTime)
     let durationInSeconds = 75 * 60;
     if (startResult && eventResult) {
-      const route = await osrmRoute([startResult, eventResult]);
+      const routeWaypoints = [
+        startResult,
+        ...waypointsList
+          .filter(w => w.lat != null && w.lon != null)
+          .map(w => ({ lat: String(w.lat), lon: String(w.lon) })),
+        eventResult
+      ];
+      const route = await osrmRoute(routeWaypoints);
       durationInSeconds = route.totalSeconds;
     }
 
@@ -89,6 +109,12 @@ export const actions: Actions = {
       seats: seatsRaw,
       seatsAvailable: seatsRaw,
       pricePerPerson: priceRaw,
+      // Zwischenstopps werden gespeichert (für Routenanzeige auf Detailseite)
+      waypoints: waypointsList.map(w => ({
+        label: w.label,
+        lat: String(w.lat),
+        lon: String(w.lon)
+      })),
       fairplayWindowMinutes: 15,
       noShowPolicy: DEFAULT_NO_SHOW_POLICY,
       routeVersion: 0,

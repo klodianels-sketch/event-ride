@@ -24,9 +24,9 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
   if (!ride.startCoords || !ride.eventLocationCoords) {
     const repaired = await ensureRideCoords(ride, db);
-    if (repaired.startCoords) (ride as any).startCoords = repaired.startCoords;
-    if (repaired.eventCoords) (ride as any).eventLocationCoords = repaired.eventCoords;
-    if (repaired.startCoordsRough) (ride as any).startCoordsRough = repaired.startCoordsRough;
+    if (repaired.startCoords) ride['startCoords'] = repaired.startCoords;
+    if (repaired.eventCoords) ride['eventLocationCoords'] = repaired.eventCoords;
+    if (repaired.startCoordsRough) ride['startCoordsRough'] = repaired.startCoordsRough;
   }
 
   const prefilledLat = url.searchParams.get('plat');
